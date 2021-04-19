@@ -10,6 +10,7 @@ class Service {
         int mem;
         int thuput;
         int e2e_delay;
+        int d_delay;
 
 };
 
@@ -31,10 +32,9 @@ class Server {
         int c_cpu;
         int intfc; //interference
         int proc_delay;
-        vector<Service> ser_list;
+        vector<Service> service_list;
         int get_intfc();
         bool deploy(Service ser);
-
 };
 
 class MEC : public Server {
@@ -47,18 +47,44 @@ class CC: public Server {
         CC();
 };
 
+class Cluster  {
+    public:
+        vector<Server> server_list;
+        Link *front = NULL;
+        Link *rear = NULL;
+};
+
+class Edge: public Cluster {
+    public:
+        vector<MEC> mec_list;
+};
+
+class Core: public Cluster {
+    public:
+        vector<CC> cc_list;
+};
+
 class Link {
     public:
         int prop_delay;
         int c_bw;
         int d_bw;
+        Cluster *front = NULL;
+        Cluster *rear = NULL;
         Link();
         bool deploy(Service ser);
 };
 
+class Metrics {
+    public:
+        int exec_time;
+        int acc_ratio;
+        int avg_delay;
+        int nor_thuput;
+};
+
 class Simulator {
     public:
-        int throughput;
         vector<MEC> mec_set;
         vector<CC> cc_set;
         vector<Service> req_set;
@@ -67,6 +93,7 @@ class Simulator {
         Link ue_mec;
         Link mec_cc;
         int sim_time;
+        Metrics mtr;
         Simulator();
         void start(int time);
         void eval();

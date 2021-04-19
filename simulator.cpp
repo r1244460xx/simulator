@@ -17,7 +17,7 @@ bool Server::deploy(Service ser) {
     if(d_cpu+ser.cpu<=c_cpu && d_mem+ser.mem<=c_mem) {
         d_cpu += ser.cpu;
         d_mem += ser.mem;
-        ser_list.push_back(ser);
+        service_list.push_back(ser);
         return true;
     }else{
         return false;
