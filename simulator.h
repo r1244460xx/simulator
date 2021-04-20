@@ -11,6 +11,10 @@ class Service {
         int thuput;
         int e2e_delay;
         int d_delay;
+        int d_bw;
+        bool accepted;
+        int get_e2e_delay();
+        bool is_accept();
 
 };
 
@@ -81,6 +85,7 @@ class Metrics {
         int acc_ratio;
         int avg_delay;
         int nor_thuput;
+        void print();
 };
 
 class Simulator {
@@ -95,13 +100,23 @@ class Simulator {
         int sim_time;
         Metrics mtr;
         Simulator();
-        void start(int time);
         void eval();
+        void deploy(Service service);
+        void arrive();
+        void depart();
+        void init(int seed);
+        int event();
+        void print();
+
 };
 
+class Proposal {
+    
+};
 
+class AIA {
 
-
+};
 
 
 

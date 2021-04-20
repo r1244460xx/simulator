@@ -1,8 +1,24 @@
 #include "simulator.h"
 
 int main () {
-    Simulator simultor;
-    
+    Simulator simulator;
+    int time;
+    cout << "Insert simulation time: " << time << endl;
+    cin >> time;
+    simulator.init(time);
+    while(time>0) {
+        time -= simulator.event();
+        //simulator.eval();
+    }
+    simulator.print();
+}
+/*----------Service class-------------*/
+bool Service::is_accept() {
+    if(e2e_delay<=d_delay) {
+        return true;
+    }else {
+        return false;
+    }
 }
 
 /*----------Server class-------------*/
@@ -38,10 +54,24 @@ bool Link::deploy(Service ser) {
 
 /*----------Simulator class-------------*/
 void Simulator::eval() {
-    int tt_thuput = 0;
-    for(int i=0; i<acc_set.size(); i++) {
-        tt_thuput +=  acc_set[i].thuput;
-    }
-    cout << "Performance metric" << endl;
-    cout << "Total throughput: " << tt_thuput << endl;
+    
+}
+
+int Simulator::event() {
+    //arrive or depart 
+}
+
+void Simulator::init(int seed) {
+    srand(seed);
+}
+
+void Simulator::print() {
+    mtr.print();
+}
+
+/*----------Metrics class-------------*/
+void Metrics::print() {
+    cout << "Accepted ratio: " << acc_ratio << endl;
+    cout << "Average delay: " << avg_delay << endl;
+    cout << "Normalized throughput: " << nor_thuput << endl;
 }
