@@ -13,7 +13,7 @@ int main () {
     simulator.print();
 }
 /*----------Service class-------------*/
-bool Service::is_accept() {
+bool Service::is_satified() {
     if(e2e_delay<=d_delay) {
         return true;
     }else {
@@ -26,13 +26,13 @@ int Server::get_intfc() {
     double k0;
     double k1;
     double k2;
-    return k0 + k1*d_cpu/c_cpu + k2*d_mem/c_mem;
+    return k0 + k1*d_cpu/s_cpu + k2*d_mem/s_mem;
 }
 
 bool Server::deploy(Service ser) {
-    if(d_cpu+ser.cpu<=c_cpu && d_mem+ser.mem<=c_mem) {
-        d_cpu += ser.cpu;
-        d_mem += ser.mem;
+    if(d_cpu+ser.d_cpu<=s_cpu && d_mem+ser.d_mem<=s_mem) {
+        d_cpu += ser.d_cpu;
+        d_mem += ser.d_mem;
         service_list.push_back(ser);
         return true;
     }else{
@@ -44,7 +44,7 @@ bool Server::deploy(Service ser) {
 
 /*----------Link class-------------*/
 bool Link::deploy(Service ser) {
-    if(d_bw+ser.thuput <= c_bw) {
+    if(d_bw+ser.thuput <= s_bw) {
         d_bw += ser.thuput;
         return true;
     }else {

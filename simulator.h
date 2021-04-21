@@ -6,15 +6,15 @@ using namespace std;
 
 class Service {
     public:
-        int cpu;
-        int mem;
+        int d_cpu;
+        int d_mem;
         int thuput;
         int e2e_delay;
         int d_delay;
         int d_bw;
         bool accepted;
         int get_e2e_delay();
-        bool is_accept();
+        bool is_satified();
 
 };
 
@@ -32,8 +32,8 @@ class Server {
     public:
         int d_mem;
         int d_cpu;
-        int c_mem;
-        int c_cpu;
+        int s_mem;
+        int s_cpu;
         int intfc; //interference
         int proc_delay;
         vector<Service> service_list;
@@ -71,7 +71,7 @@ class Core: public Cluster {
 class Link {
     public:
         int prop_delay;
-        int c_bw;
+        int s_bw;
         int d_bw;
         Cluster *front = NULL;
         Cluster *rear = NULL;
