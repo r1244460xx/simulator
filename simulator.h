@@ -16,7 +16,7 @@ class Service {
         int d_bw = 0;
         bool accepted = false;
         Service(int t);
-        double get_e2e_delay();
+        int get_thuput(double intfc);  //get interferenced thuput
         bool is_satified();
 
 };
@@ -27,28 +27,21 @@ class Server {
         int d_cpu = 0;
         int s_mem = 0;
         int s_cpu = 0;
-        int cr = 0; //concentration rate
-        int intfc = 0; //interference
-        double node_delay = 0.; //rsp delay
-        vector<Service> service_list; //deployed service
-        Server(int t);
-        int get_intfc(); //update intfc 
-        double get_node_delay(); //update node delay;
-        bool avail(Service ser); //Available for this deployment
-        int get_thuput(Service ser);  //get interferenced thuput
-        void deploy(Service ser); //exec the deployment
-};
-
-class Link {
-    public:
-        double link_delay = 0.;
         int s_bw = 0;
         int d_bw = 0;
-        int cr; //concentration rate
-        Link();
+        int type = 0;
+        int node_cr = 0; //concentration rate
+        int link_cr = 0;
+        double intfc = 0.; //interference
+        double node_delay = 0.; //rsp delay
+        double link_delay = 0.;
+        vector<Service> service_list; //deployed service
+        Server(int t);
+        double get_intfc(); //update intfc 
+        double get_node_delay(); //update node delay;
         double get_link_delay(); //update link delay
         bool avail(Service ser); //Available for this deployment
-        void deploy(Service ser); //Execute the deployment
+        void deploy(Service ser); //exec the deployment
 };
 
 class Metrics {
@@ -65,8 +58,6 @@ class Simulator {
         vector<Service> service_set;
         vector<Server> mec_set;
         vector<Server> cc_set;
-        Link ue_mec;
-        Link ue_cc;
         int sim_time = 0;
         Metrics mtr;
         Simulator();
@@ -87,7 +78,7 @@ class Proposal {
 
 class AIA {
     public:
-    vector<Server>::iterator eval(Service service, vector<Server>& mec_set, vector<Server>& cc_set); //evaluate between CC and MEC choice, return chosed one
+    static vector<Server>::iterator eval(Service service, vector<Server>& mec_set, vector<Server>& cc_set); //evaluate between CC and MEC choice, return chosed one
 
 };
 
