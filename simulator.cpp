@@ -59,20 +59,22 @@ bool Service::is_satified() {
 Server::Server(int t) {
     switch(t) {
         case MEC:
-            s_cpu = 16;
-            s_mem = 64;
+            s_cpu = 4;
+            s_mem = 16;
             node_cr = 3;
-            node_delay = 0.1;
-            s_bw = 1000000;
+            link_cr = 3;
+            node_delay = 0.2;
+            s_bw = 20000000;
             link_delay = 0.5;
             type = t;
             break;
         case CC:
-            s_cpu = 4;
-            s_mem = 16;
+            s_cpu = 16;
+            s_mem = 64;
             node_cr = 3;
-            node_delay = 0.1;
-            s_bw = 1000000;
+            link_cr = 3;
+            node_delay = 0.2;
+            s_bw = 20000000;
             link_delay = 50.;
             type = t;
             break;
@@ -82,7 +84,7 @@ Server::Server(int t) {
 double Server::get_intfc() {
     double k0 = 0.0;
     double k1 = 0.5;
-    double k2=0.5;
+    double k2 = 0.5;
     return k0 + k1*d_cpu/s_cpu + k2*d_mem/s_mem;
 }
 
