@@ -6,9 +6,13 @@ int main () {
     cout << "Insert simulation time: " << time << endl;
     cin >> time;
     simulator.init(time);
+    /*
     while(time>0) {
         time -= simulator.event();
     }
+    */
+    /* Show the performance evaluation */
+    simulator.statistics();
     simulator.print();
 }
 /*----------Service class-------------*/
@@ -44,17 +48,14 @@ Service::Service(int t) {
     }
 }
 
+double Service::get_e2e_delay(double node_delay, double link_delay) {
+    return node_delay + link_delay;
+}
+
 int Service::get_thuput(double intfc) {
     return intfc * thuput;
 }
 
-bool Service::is_satified() {
-    if(e2e_delay <= d_delay && thuput <= d_bw) {
-        return true;
-    }else {
-        return false;
-    }
-}
 /*----------Server class-------------*/
 Server::Server(int t) {
     switch(t) {
@@ -92,7 +93,7 @@ double Server::get_node_delay() {
     double const_node_delay = 0.2;
     if(d_cpu<s_cpu && d_mem<s_mem) {
         return const_node_delay;
-    }else if(d_cpu>=s_cpu && d_cpu<s_cpu*node_cr && d_mem>=s_mem && d_mem<s_mem*node_cr) {
+    }else if((d_cpu>=s_cpu && d_cpu<s_cpu*node_cr) || (d_mem>=s_mem && d_mem<s_mem*node_cr)) {
         return const_node_delay * (1 + d_cpu/(s_cpu*node_cr));
     }else {
         return const_node_delay * (1 + d_cpu/s_cpu);
@@ -110,33 +111,40 @@ double Server::get_link_delay() {
     }
 }
 
-bool Server::avail(Service ser) {
+bool Server::avail(Service& service) {
     if(type == MEC) {
-        int cpu = (d_cpu + ser.d_cpu) * node_cr;
-        int mem = (d_mem + ser.d_mem) * node_cr;
-        int bw = (d_bw + ser.d_bw) * link_cr;
-        if(cpu <= s_cpu && mem <= s_mem && bw<=s_bw) 
+        int cpu = d_cpu + service.d_cpu;
+        int mem = d_mem + service.d_mem;
+        int bw = d_bw + service.d_bw;
+        if(cpu <= s_cpu*node_cr && mem <= s_mem*node_cr && bw<=s_bw*link_cr) {
+            cout << service.id << " deployed on mec server " << id << " succeeded " <<endl;
             return true;
-        else
+        }
+        else {
+            cout << service.id << " deployed on mec server " << id  << " failed " << endl;
+        }
             return false;
     }else {
+        cout << service.id << " deployed on cc server " << id << " succeeded " <<endl;
         return true;
     }
 }
 
-void Server::deploy(Service ser) {
-    d_cpu += ser.d_cpu;
-    d_mem += ser.d_mem;
-    d_bw += ser.d_bw;
-    intfc = get_intfc();
-    node_delay = get_node_delay();
-    link_delay = get_link_delay();
-    ser.e2e_delay = node_delay + link_delay;
-    ser.thuput = ser.get_thuput(intfc);
-    service_list.push_back(ser);
+void Server::deploy(Service& service) {
+    d_cpu += service.d_cpu;
+    d_mem += service.d_mem;
+    d_bw += service.d_bw;
+    intfc = get_intfc();  //update interference of of this Server 
+    node_delay = get_node_delay(); //update node delay of this Server
+    link_delay = get_link_delay(); //update link delay of this Server
+    service_list.push_back(service);
+    for(int i=0; i<service_list.size(); i++) {
+        service_list[i].e2e_delay = service_list[i].get_e2e_delay(node_delay, link_delay); //update measured e2e delay
+        service_list[i].thuput = service_list[i].get_thuput(intfc); //update measured throughput
+    }
 }
 
-/*----------Simulator class-------------*/
+/*----------Simulator class-------------
 int Simulator::event() {
     int e = rand()%2;
     if(e == ARRIVE) {
@@ -150,8 +158,8 @@ int Simulator::event() {
 void Simulator::arrive() {
     int s = rand()%3;
     Service service(s);
-    service_set.push_back(s);
-    vector<Server>::iterator iter = Proposal::eval(service, mec_set, cc_set);
+    //service_set.push_back(service);
+    vector<Server>::iterator iter = Proposal::eval(service, mec_set, cc_set); //My method
     if(iter->avail(service)) {
         iter->deploy(service);
     }
@@ -160,9 +168,35 @@ void Simulator::arrive() {
 void Simulator::depart() {
     
 }
-
+*/
 void Simulator::init(int seed) {
     srand(seed);
+    num_cc = 1;
+    num_mec = 1;
+    for(int i=0; i<num_mec; i++) {
+        Server s(MEC);
+        mec_set.push_back(s);
+        s.id = i;
+    }
+    for(int i=0; i<num_cc; i++) {
+        Server s(CC);
+        cc_set.push_back(s);
+        s.id = i;
+    }
+    num_service = 100;
+    for(int i=0; i<num_service; i++) {
+        int s = rand()%3;
+        Service service(s);
+        service.id = i;
+        service_set.push_back(service);
+    }
+}
+
+void Simulator::statistics() {
+    vector<Server> cloud;
+    cloud.insert(cloud.end(), mec_set.begin(), mec_set.end());
+    cloud.insert(cloud.end(), cc_set.begin(), cc_set.end());
+    mtr.statistic(cloud);
 }
 
 void Simulator::print() {
@@ -170,14 +204,31 @@ void Simulator::print() {
 }
 
 /*----------Metrics class-------------*/
+void Metrics::statistic(vector<Server>& server_list) {
+    int counter = 0;
+    int sat_counter = 0;
+    for(int i=0; i<server_list.size(); i++) {
+        for(int j=0; j<server_list[i].service_list.size(); j++) {
+            nor_thuput += server_list[i].service_list[j].thuput;
+            avg_delay += server_list[i].service_list[j].e2e_delay;
+            if(server_list[i].service_list[j].e2e_delay<=server_list[i].service_list[j].d_delay) {
+                sat_counter++;
+            }
+            counter++;
+        }
+    }
+    acc_ratio = sat_counter / counter;
+    avg_delay /= counter;
+}
+
 void Metrics::print() {
     cout << "Accepted ratio: " << acc_ratio << endl;
     cout << "Average delay: " << avg_delay << endl;
     cout << "Normalized throughput: " << nor_thuput << endl;
 }
 
-/*----------Proposal class-------------*/
-vector<Server>::iterator Proposal::eval(Service service, vector<Server>& mec_set, vector<Server>& cc_set) {
+/*----------Proposal class-------------
+vector<Server>::iterator Proposal::eval(Service& service, vector<Server>& mec_set, vector<Server>& cc_set) {
     int mec_score = 0;
     int cc_score = 0;
     vector<Server>::iterator mec_iter = mec_set.begin();
@@ -207,6 +258,8 @@ vector<Server>::iterator Proposal::eval(Service service, vector<Server>& mec_set
     }
 }
 
-int Proposal::get_score(Service service, Server server) { //Scoring mechanism
+int Proposal::get_score(Service& service, Server& server) { //Scoring mechanism
 
 }
+*/
+/*----------AIA class-------------*/
