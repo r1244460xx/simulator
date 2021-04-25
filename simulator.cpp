@@ -84,30 +84,35 @@ Server::Server(int t) {
 
 double Server::get_intfc() {
     double k0 = 0.0;
-    double k1 = 0.5;
-    double k2 = 0.5;
-    return k0 + k1*d_cpu/s_cpu + k2*d_mem/s_mem;
+    double k1 = 0.2;
+    double k2 = 0.2;  //light interference
+    double k3 = 0.0;
+    double k4 = 0.6; //severe interference
+    double k5 = 0.6;
+    if(d_cpu<s_cpu && d_mem<s_mem) {
+        return 1.;
+    }else if((d_cpu>=s_cpu && d_cpu<s_cpu*node_cr) || (d_mem>=s_mem && d_mem<s_mem*node_cr)) {
+        return 1 - (k0 + k1*d_cpu/s_cpu + k2*d_mem/s_mem); //light interference
+    }else {
+        return 1 - (k3 + k4*d_cpu/s_cpu + k5*d_mem/s_mem); //severe interference
+    }
 }
 
 double Server::get_node_delay() {
     double const_node_delay = 0.2;
-    if(d_cpu<s_cpu && d_mem<s_mem) {
-        return const_node_delay;
-    }else if((d_cpu>=s_cpu && d_cpu<s_cpu*node_cr) || (d_mem>=s_mem && d_mem<s_mem*node_cr)) {
-        return const_node_delay * (1 + d_cpu/(s_cpu*node_cr));
-    }else {
-        return const_node_delay * (1 + d_cpu/s_cpu);
-    }
+    return const_node_delay / intfc;
 }
 
 double Server::get_link_delay() {
     double const_link_delay = 0.2;
+    double m0 = 0.1;
+    double m1 = 0.3;
     if(d_bw<s_bw) {
         return const_link_delay;
-    }else if(d_bw>=s_bw && d_bw < s_bw*link_cr) {
-        return const_link_delay * (1+ d_bw/(s_bw*link_cr));
+    }else if(d_bw>=s_bw && d_bw<s_bw*link_cr) {
+        return const_link_delay / (1 - m0*d_bw/s_bw);
     }else {
-        return const_link_delay * (1+ d_bw/s_bw);
+        return const_link_delay / (1 - m1*d_bw/s_bw);
     }
 }
 
