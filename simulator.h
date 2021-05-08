@@ -72,7 +72,6 @@ class Simulator {
         int event(); //randomly generate a event, return timestamp
         void arrive();  //arrive event
         void depart(); //depart event
-        void deploy(); //Execute the deployment
         void statistics();
         void print(); //Print metrics
         
