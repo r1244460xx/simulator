@@ -1,1 +1,1 @@
-g++ simulator.cpp -o simulator.exe -std=c++11
+g++ simulator.cpp -o a.exe -std=c++11

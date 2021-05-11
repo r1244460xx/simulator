@@ -32,16 +32,13 @@ class Server {
         int d_sr = 0;
         int s_bw = 0;
         int d_bw = 0;
-        int node_cr = 0; //concentration rate
+        double node_cr = 0; //concentration rate
         double intfc = 0.; //interference
         double proc_delay = 0.; //rsp delay
         double propa_delay = 0.;
         vector<Service> service_list; //deployed service
         Server(int t);
         double get_intfc(); //update intfc 
-        double get_proc_delay(); //return processing delay
-        double get_propa_delay(); //return propagation delay
-        bool avail(Service& ser); //available for this deployment
         void deploy(Service& ser); //execute the deployment
 };
 
