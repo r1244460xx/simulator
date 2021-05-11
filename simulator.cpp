@@ -231,7 +231,7 @@ int DTM::get_score(Service& service, Server server) {
     server.d_sr += service.d_sr;
     if(server.d_sr > server.s_sr*server.node_cr) {
         cout <<"\tService id: " << service.id << " on Server id: " << server.id << " has not enough space" << endl;
-        return -100000; //不能放就直接-1分
+        return -1; //不能放就直接-1分
     }
     server.service_list.push_back(service); //能放就開始算分
     server.intfc = server.get_intfc();
