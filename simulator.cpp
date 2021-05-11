@@ -1,7 +1,7 @@
 #include "simulator.h"
 
 int main () {
-    int num_req = 1, num_mec = 1, num_cc = 1, seed = 0;
+    int num_req = 60, num_mec = 4, num_cc = 1, seed = 1;
     cout << "Insert the numbers of service, mec, cc services, seed" << endl;
     cin >> num_req >> num_mec >> num_cc >> seed;
     Simulator simulator(num_req, num_mec, num_cc, seed);
@@ -15,17 +15,17 @@ Service::Service(int t) {
     switch(t) {
         case URLLC:
             type = t;
-            d_sr = 1;
-            thuput = rand()%1000+1;
-            d_delay = 2.;
+            d_sr = rand()%4+1;
+            thuput = d_sr*2500;
+            d_delay = (rand()/11+10)/10.;
             data_rate_unit = 10;
             break;
 
         case EMBB:
             type = t;
-            d_sr = 2;
-            thuput = rand()%1000+1;
-            d_delay = 100.;
+            d_sr = rand()%4+1;
+            thuput = d_sr*50;
+            d_delay = (rand()/901+100)/10.;
             data_rate_unit = 1000;
             break;
 
@@ -52,24 +52,24 @@ Server::Server(int t) {
     switch(t) {
         case MEC:
             type = t;
-            s_sr = 4;
+            s_sr = 8;
             s_bw = 20000000; //kbps
-            node_cr = 3;
-            propa_delay = static_cast<double>(rand()%5+1)/10.; //random 0.1~0.5
+            node_cr = 1.5;
+            propa_delay = 0.; //random 0.1~0.5
             break;
         case CC:
             type = t;
-            s_sr = 16;
+            s_sr = 32;
             s_bw = 20000000;
-            node_cr = 3;
-            propa_delay = 50.;
+            node_cr = 1.5;
+            propa_delay = 45.;
             break;
     }
 }
 
 double Server::get_intfc() {
     double k0 = 0.0;
-    double k1 = 0.5;
+    double k1 = 0.8;
     if(d_sr<s_sr) {
         return 1.;
     }else if(d_sr>=s_sr && d_sr<s_sr*node_cr) {
@@ -79,12 +79,11 @@ double Server::get_intfc() {
     }
 }
 
-double Server::get_proc_delay() {
-    double const_node_delay = 0.2;
-    return const_node_delay / intfc;
+double Server::get_proc_delay() { //deprecated
+    return 1;
 }
 
-bool Server::avail(Service& service) {
+bool Server::avail(Service& service) { //deprecated
     if(type == MEC) {
         int sr = d_sr + service.d_sr;
         int bw = d_bw + service.d_bw;
@@ -124,9 +123,11 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
         service.id = i;
         request_set.push_back(service);
     }
+    double mec_delay[] = {0.25, 5., 15., 25.};
     for(int i=0; i<num_mec; i++) {
         Server s(MEC);
         s.id = id++;
+        s.propa_delay = mec_delay[i];
         server_set.push_back(s);
     }
     for(int i=0; i<num_cc; i++) {
@@ -139,7 +140,8 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 void Simulator::simulate() {
     for(int i=0; i<request_set.size(); i++) {
         vector<Server>::iterator iter = DTM::eval(request_set[i], server_set); //put into DTM evaluation
-        iter->deploy(request_set[i]); //Exectue the deployment
+        if(iter!=server_set.end()) //if all server are congestion
+            iter->deploy(request_set[i]); //Exectue the deployment
     }
 }
 
@@ -202,30 +204,33 @@ vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set)
         }
     }
     assert(score_table.size()==server_set.size());
-    return server_set.begin()+max_index;
+    if(max == -1) {
+        server_set.end();
+    }else 
+        return server_set.begin()+max_index;
 }
 
 int DTM::get_score(Service& service, Server server) {
-    double r = 2.;
+    double r = 1.5;
     int D = 0, T = 0, M = 0;
     server.d_sr += service.d_sr;
     if(server.d_sr > server.s_sr) {
-        return 0; //不能放就直接0分
+        return -1; //不能放就直接-1分
     }
     server.service_list.push_back(service); //能放就開始算分
     server.intfc = server.get_intfc();
-    double psi = 1.;
-    double omega = 1.;
-    double tau = 1.;
+    double psi = 0.3;
+    double omega = 0.3;
+    double tau = 0.4;
     for(int i=0; i<server.service_list.size(); i++) {
         server.service_list[i].degraded_thuput = server.service_list[i].get_thuput(server.intfc);
         server.service_list[i].e2e_delay = server.service_list[i].get_e2e_delay(server.propa_delay);
     }
     
-    if(server.service_list.back().e2e_delay > server.service_list.back().d_delay) {
+    if(server.service_list.back().e2e_delay * r > server.service_list.back().d_delay) {
         D = 0;
     }else {
-        D = psi / abs(server.service_list.back().d_delay - server.service_list.back().e2e_delay);
+        D = psi / abs(server.service_list.back().d_delay * r - server.service_list.back().e2e_delay);
     }
     T = omega * server.service_list.back().degraded_thuput;
     
