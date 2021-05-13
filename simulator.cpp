@@ -1,7 +1,7 @@
 #include "simulator.h"
 
 int main () {
-    for(int i=10; i<70; i+=10) {
+    for(int i=10; i<20; i+=10) {
         int num_req = i, num_mec = 4, num_cc = 1, seed = 1;
         //cout << "Insert the numbers of service, mec, cc services, seed" << endl;
         //cin >> num_req >> num_mec >> num_cc >> seed;
@@ -21,9 +21,9 @@ Service::Service(int t) {
     switch(t) {
         case URLLC:
             type = t;
-            d_sr = rand()%4+1;
-            consumed_sr = rand()%d_sr+1;
-            thuput = d_sr*2500;
+            d_sr = rand()%4 + 1;
+            consumed_sr = rand()%d_sr + 1;
+            thuput = d_sr * 2500;
             d_delay = (rand()%11+10)/10.;
             data_rate_unit = 10;
             break;
@@ -49,7 +49,7 @@ Service::Service(int t) {
 }
 
 double Service::get_e2e_delay(double propa_delay) {
-    return static_cast<double>(1/degraded_thuput) + propa_delay;
+    return 1000./static_cast<double>(degraded_thuput) + 2 * propa_delay;
 }
 
 int Service::get_thuput(double intfc) {
@@ -78,9 +78,9 @@ Server::Server(int t) {
 
 double Server::get_intfc() {
     double k1 = 0.9;
-    if(used_sr<=s_sr) {
+    if(used_sr <= s_sr) {
         return 1.;
-    }else if(used_sr>s_sr && used_sr<=(s_sr*node_cr)) {
+    }else if(used_sr > s_sr && used_sr <= (s_sr*node_cr)) {
         return 1 - k1 * ((used_sr-s_sr) / (s_sr*(node_cr-1))); 
     }else {
         cout << used_sr << " " << s_sr << endl;
@@ -90,7 +90,7 @@ double Server::get_intfc() {
 }
 
 bool Server::avail(Service& service) {
-    if((d_sr+service.d_sr)<=s_sr*node_cr) {
+    if((d_sr + service.d_sr) <= s_sr * node_cr) {
         return true;
     }else {
         return false;
@@ -174,7 +174,7 @@ void Simulator::print() {
         cout << "Interference: " << server_set[i].intfc << endl;
         cout << "Number of services: " << server_set[i].service_list.size() << endl;
         for(int j=0; j<server_set[i].service_list.size(); j++) {
-            cout << "\tID: " << server_set[i].service_list[j].id << "\tCost sr : " \
+            cout << "\tID: " << server_set[i].service_list[j].id << ", Type: " << server_set[i].service_list[j].type << ", Cost sr : " \
             << server_set[i].service_list[j].consumed_sr  << " // " << server_set[i].service_list[j].d_sr << endl;
         }
         cout << endl;
@@ -195,7 +195,7 @@ void Metrics::statistic(vector<Service>& servcie_list, vector<Server>& server_li
     for(int i=0; i<server_list.size(); i++) {
         //cout << "Server id: " << server_list[i].id << " , size: " << server_list[i].service_list.size() << endl;
         for(int j=0; j<server_list[i].service_list.size(); j++) {
-            //cout << "\tService id: " << server_list[i].service_list[j].id;
+            
             if(server_list[i].service_list[j].type == URLLC) {
                 avg_urllc_delay += server_list[i].service_list[j].e2e_delay;
             }else if(server_list[i].service_list[j].type == EMBB) {
@@ -204,10 +204,10 @@ void Metrics::statistic(vector<Service>& servcie_list, vector<Server>& server_li
             if(server_list[i].service_list[j].e2e_delay <= server_list[i].service_list[j].d_delay) {
                 satisfy_counter++;
                 total_satisfy_thuput += server_list[i].service_list[j].degraded_thuput;
-                //cout << " is satisfied" << endl;
+                cout << "\tService id: " << server_list[i].service_list[j].id << " is satisfied" << endl;
             }else {
                 total_unsatisfy_thput += server_list[i].service_list[j].degraded_thuput;
-                //cout << " isn't satisfied" << endl;
+                cout << "\tService id: " << server_list[i].service_list[j].id << " isn't satisfied" << endl;
             }
         }
     }
@@ -237,11 +237,11 @@ vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set)
         data_table.push_back(data);
     }
     normalization(data_table); //standardize the dataset
-    // cout << "Service id: " << service.id <<" data Score table: " <<endl;
-    // for(int i=0; i<data_table.size(); i++) {
-    //     cout << "\tServer ID: " <<data_table[i].server_id << ": Delay score: " << data_table[i].delay_score << ", Thuput score: " << data_table[i].thuput_score \
-    //     << ", Lost Thuput score: " << data_table[i].lost_thuput_score << endl;
-    // }
+    cout << "Service id: " << service.id <<" data Score table: " <<endl;
+    for(int i=0; i<data_table.size(); i++) {
+        cout << "\tServer ID: " <<data_table[i].server_id << ": Delay score: " << data_table[i].delay_score << ", Thuput score: " << data_table[i].thuput_score \
+        << ", Lost Thuput score: " << data_table[i].lost_thuput_score << endl;
+    }
     int index = WAA(data_table); //get the highest score of server
     // for(int i=0; i<score_table.size(); i++) { 
     //     if(score_table[i]>=0 && score_table[i]>max) { //Block score <0, and find highest score

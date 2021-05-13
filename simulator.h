@@ -94,9 +94,9 @@ class Data {
 
 class DTM {
     public:
-    static constexpr double psi = 0.5; 
-    static constexpr double omega = 0.5;
-    static constexpr double tau = 0.3;
+    static constexpr double psi = 1; 
+    static constexpr double omega = 1;
+    static constexpr double tau = 1;
     static constexpr double reserved_factor = 1.;
     static vector<Server>::iterator eval(Service& service, vector<Server>& server_set); //evaluate between CC and MEC choice, return chosed one
     static Data get_data(Service& service, Server server);
