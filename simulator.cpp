@@ -164,9 +164,12 @@ void Simulator::statistics() {
 void Simulator::print() {
     //mtr.print();
     for(int i=0; i<server_set.size(); i++) {
-        cout << "Consumed:" << server_set[i].d_sr << endl;
+        cout << "Allocated: " << server_set[i].d_sr << endl;
+        cout << "Used: " << server_set[i].used_sr << endl;
+        cout << "Number of services: " << server_set[i].service_list.size() << endl;
         for(int j=0; j<server_set[i].service_list.size(); j++) {
-            cout << "\tID: " << server_set[i].service_list[j].id << "\tCost sr : " << server_set[i].service_list[j].d_sr << endl;
+            cout << "\tID: " << server_set[i].service_list[j].id << "\tCost sr : " \
+            << server_set[i].service_list[j].consumed_sr  << " // " << server_set[i].service_list[j].d_sr << endl;
         }
     }
 }
@@ -217,7 +220,7 @@ vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set)
     vector<Data> data_table;
     for(int i=0; i<server_set.size(); i++) { //Fill the data_table
         Data data = get_data(service, server_set[i]);
-        cout << "Service id: " << service.id << " on Server id: " << server_set[i].id << " parameters are " << \
+        cout << "\tService id: " << service.id << " on Server id: " << server_set[i].id << " parameters are " << \
         data.delay << " " << data.thuput << " " << data.lost_thuput << endl;
         data_table.push_back(data);
     }
@@ -225,7 +228,7 @@ vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set)
     cout << endl;
     cout << "Data Score table: " <<endl;
     for(int i=0; i<data_table.size(); i++) {
-        cout << "Delay score: " << data_table[i].delay_score << ", Thuput score: " << data_table[i].thuput_score \
+        cout << "ID: " <<data_table[i].server_id << ": Delay score: " << data_table[i].delay_score << ", Thuput score: " << data_table[i].thuput_score \
         << ", Lost Thuput score: " << data_table[i].lost_thuput_score << endl;
     }
     int index = WAA(data_table); //get the highest score of server
@@ -356,12 +359,11 @@ void DTM::standardization(vector<Data>& data_table) {
     for(int i=0; i<data_table.size(); i++) {
         if(i_max != i_min) {
             data_table[i].lost_thuput_score = 100*((data_table[i].lost_thuput-i_min) / (i_max-i_min));
-
+            data_table[i].lost_thuput_score = 0;
         }else {
             data_table[i].lost_thuput_score = 0;
         }
     }
-    cout << "Standard over " << endl;   
 }
 
 int DTM::WAA(vector<Data>& data_table) { //Weighted_arithmetic_average
