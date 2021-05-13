@@ -73,29 +73,35 @@ class Simulator {
         void print(); //Print metrics
 };
 
+class Data {
+    public:
+        double delay = 0.;
+        int thuput = 0;
+        int lost_thuput = 0;
+        int delay_score = 0;
+        int thuput_score = 0;
+        int lost_thuput_score = 0;
+        int server_id = 0;
+        bool deployable = false;
+        double D = 0;
+        double T = 0;
+        double M = 0;
+};
+
 class DTM {
     public:
-    double delay = 0.;
-    int thuput = 0;
-    int lost_thuput = 0;
-    int delay_score = 0;
-    int thuput_score = 0;
-    int lost_thuput_score = 0;
-    int server_id = 0;
-    bool deployable = false;
-    double psi = 0.5; 
-    double omega = 0.5;
-    double tau = 0.3;
-    double reserved_factor = 1.;
-    double D = 0;
-    double T = 0;
-    double M = 0;
+    static constexpr double psi = 0.5; 
+    static constexpr double omega = 0.5;
+    static constexpr double tau = 0.3;
+    static constexpr double reserved_factor = 1.;
     static vector<Server>::iterator eval(Service& service, vector<Server>& server_set); //evaluate between CC and MEC choice, return chosed one
     static int get_score(Service& service, Server server);
-    static DTM get_data(Service& service, Server server);
-    static void standardization(vector<DTM>& data_table);
-    static int WAA(vector<DTM>& data_table);
+    static Data get_data(Service& service, Server server);
+    static void standardization(vector<Data>& data_table);
+    static int WAA(vector<Data>& data_table);
 };
+
+
 
 enum SERVER {
     MEC,

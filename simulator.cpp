@@ -1,7 +1,7 @@
 #include "simulator.h"
 
 int main () {
-    int num_req = 60, num_mec = 4, num_cc = 1, seed = 1;
+    int num_req = 30, num_mec = 4, num_cc = 1, seed = 1;
     //cout << "Insert the numbers of service, mec, cc services, seed" << endl;
     //cin >> num_req >> num_mec >> num_cc >> seed;
     Simulator simulator(num_req, num_mec, num_cc, seed);
@@ -214,12 +214,20 @@ void Metrics::print() {
 
 vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set) {
     vector<int> score_table;
-    vector<DTM> data_table;
+    vector<Data> data_table;
     for(int i=0; i<server_set.size(); i++) { //Fill the data_table
-        DTM data = get_data(service, server_set[i]);
+        Data data = get_data(service, server_set[i]);
+        cout << "Service id: " << service.id << " on Server id: " << server_set[i].id << " parameters are " << \
+        data.delay << " " << data.thuput << " " << data.lost_thuput << endl;
         data_table.push_back(data);
     }
     standardization(data_table); //standardize the dataset
+    cout << endl;
+    cout << "Data Score table: " <<endl;
+    for(int i=0; i<data_table.size(); i++) {
+        cout << "Delay score: " << data_table[i].delay_score << ", Thuput score: " << data_table[i].thuput_score \
+        << ", Lost Thuput score: " << data_table[i].lost_thuput_score << endl;
+    }
     int index = WAA(data_table); //get the highest score of server
     // for(int i=0; i<score_table.size(); i++) { 
     //     if(score_table[i]>=0 && score_table[i]>max) { //Block score <0, and find highest score
@@ -237,11 +245,11 @@ vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set)
         
 }
 
-DTM DTM::get_data(Service& service, Server server) {
-    DTM data;
+Data DTM::get_data(Service& service, Server server) {
+    Data data;
     if(!server.avail(service)) {
         cout <<"\tService id: " << service.id << " on Server id: " << server.id << " has not enough space" << endl;
-        deployable = false;
+        data.deployable = false;
         return data;
     }else {
         server.deploy(service);
@@ -255,96 +263,115 @@ DTM DTM::get_data(Service& service, Server server) {
             }
         }
         data.lost_thuput = total_us_thuput;
-        deployable = true;
+        data.deployable = true;
         return data;
     }
     
 }
 
-void DTM::standardization(vector<DTM>& data_table) {
-    vector<DTM>::iterator iter = data_table.begin();
+void DTM::standardization(vector<Data>& data_table) {
+    vector<Data>::iterator iter = data_table.begin();
     while(iter!=data_table.end()) { //Delete not available server
-        if(!iter->deployable)
+        if(!(iter->deployable))
             data_table.erase(iter);
         else
             iter++;
     }
-
-    vector<DTM> negative_delay;
-    vector<DTM> positive_delay;
-    for(int i=0; data_table.size(); i++) {
-        if(data_table[i].delay<0) {
+    vector<Data> negative_delay;
+    vector<Data> positive_delay;
+    for(int i=0; i<data_table.size(); i++) {
+        if(data_table[i].delay<0.) {
             negative_delay.push_back(data_table[i]);
         }else {
             positive_delay.push_back(data_table[i]);
         }
     }
-    double max = -1.;
-    double min = 100000.;
+    double d_max = -1.;
+    double d_min = 100000.;
     for(int i=0; i<positive_delay.size(); i++) {
-        if(positive_delay[i].delay>max) {
-            max = positive_delay[i].delay;
+        if(positive_delay[i].delay>d_max) {
+            d_max = positive_delay[i].delay;
         }
-        if(positive_delay[i].delay<min) {
-            min = positive_delay[i].delay;
+        if(positive_delay[i].delay<d_min) {
+            d_min = positive_delay[i].delay;
         }
     }
+    
     for(int i=0; i<positive_delay.size(); i++) {
-        positive_delay[i].delay_score = 100 * (1 - (positive_delay[i].delay-min)/(max-min));
-    }//get normalized delay score 0~100
-    max = -100000.;
-    min = 1;
-    for(int i=0; i<negative_delay.size(); i++) {
-        if(negative_delay[i].delay>max) {
-            max = negative_delay[i].delay;
+        if(d_max != d_min) {
+            positive_delay[i].delay_score = 100 * (1 - (positive_delay[i].delay-d_min)/(d_max-d_min));
         }
-        if(negative_delay[i].delay<min) {
-            min = negative_delay[i].delay;
+        else {
+            positive_delay[i].delay_score = 100;
+        }
+    }//get normalized delay score 0~100 
+    d_max = -100000.;
+    d_min = 1;
+    for(int i=0; i<negative_delay.size(); i++) {
+        if(negative_delay[i].delay>d_max) {
+            d_max = negative_delay[i].delay;
+        }
+        if(negative_delay[i].delay<d_min) {
+            d_min = negative_delay[i].delay;
         }
     }
     for(int i=0; i<negative_delay.size(); i++) {
-        negative_delay[i].delay_score = -99 * (1 - (negative_delay[i].delay-min)/(max-min)) - 1;
+        if(d_max != d_min) {
+            negative_delay[i].delay_score = -99 * (1 - (negative_delay[i].delay-d_min)/(d_max-d_min)) - 1;
+        }else {
+            negative_delay[i].delay_score = -1;
+        }
     } //get normalized delay score -1~-100
     negative_delay.insert(negative_delay.end(), positive_delay.begin(), positive_delay.end());
     data_table = negative_delay;
     
-    int max = -10000;
-    int min = 100000;
+    int i_max = -10000;
+    int i_min = 100000;
     for(int i=0; i<data_table.size(); i++) {
-        if(data_table[i].thuput > max) {
-            max = data_table[i].thuput;
+        if(data_table[i].thuput > i_max) {
+            i_max = data_table[i].thuput;
         }
-        if(data_table[i].thuput < min) {
-            min = data_table[i].thuput;
+        if(data_table[i].thuput < i_min) {
+            i_min = data_table[i].thuput;
         }
     }
     for(int i=0; i<data_table.size(); i++) {
-        data_table[i]._thuput_score = 100*((data_table[i].thuput-min) / (max-min));
+        if(i_max!=i_min) {
+            data_table[i].thuput_score = 100*((data_table[i].thuput-i_min) / (i_max-i_min));
+        }else {
+            data_table[i].thuput_score = 100;
+        }
     }
+    
+    i_max = -10000;
+    i_min = 10000;
+    for(int i=0; i<data_table.size(); i++) {
+        if(data_table[i].lost_thuput>i_max) {
+            i_max = data_table[i].lost_thuput;
+        }
+        if(data_table[i].lost_thuput<i_min) {
+            i_min = data_table[i].lost_thuput;
+        }
+    }
+    for(int i=0; i<data_table.size(); i++) {
+        if(i_max != i_min) {
+            data_table[i].lost_thuput_score = 100*((data_table[i].lost_thuput-i_min) / (i_max-i_min));
 
-    max = -10000;
-    min = 10000;
-    for(int i=0; i<data_table.size(); i++) {
-        if(data_table[i].lost_thuput>max) {
-            max = data_table[i].lost_thuput;
-        }
-        if(data_table[i].lost_thuput<min) {
-            min = data_table[i].lost_thuput;
+        }else {
+            data_table[i].lost_thuput_score = 0;
         }
     }
-    for(int i=0; i<data_table.size(); i++) {
-        data_table[i].lost_thuput_score = 100*((data_table[i].lost_thuput-min) / (max-min));
-    }
+    cout << "Standard over " << endl;   
 }
 
-int DTM::WAA(vector<DTM>& data_table) { //Weighted_arithmetic_average
+int DTM::WAA(vector<Data>& data_table) { //Weighted_arithmetic_average
     if(!data_table.size()) {
         return -1;
-    }
+    } 
     int highest_index = -1;
     int max = -10000;
     for(int i=0; i<data_table.size(); i++) {
-        int total = psi*delay_score + omega*thuput_score - tau*lost_thuput_score;
+        int total = psi*data_table[i].delay_score + omega*data_table[i].thuput_score - tau*data_table[i].lost_thuput_score;
         if(total>max) {
             max = total;
             highest_index = i;
