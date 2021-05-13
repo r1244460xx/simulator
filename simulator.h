@@ -10,6 +10,7 @@ class Service {
         int id = 0;
         int type = 0;
         int d_sr = 0; //demand system resource
+        int consumed_sr = 0;
         int d_bw = 0; //demand link resource
         int thuput = 0; //service rate
         int degraded_thuput = 0;
@@ -30,8 +31,10 @@ class Server {
         int type = 0;
         int s_sr = 0;
         int d_sr = 0;
+        int used_sr = 0;
         int s_bw = 0;
         int d_bw = 0;
+        int rest_sr = 0;
         double node_cr = 0; //concentration rate
         double intfc = 0.; //interference
         double proc_delay = 0.; //rsp delay
@@ -39,6 +42,7 @@ class Server {
         vector<Service> service_list; //deployed service
         Server(int t);
         double get_intfc(); //update intfc 
+        bool avail(Service& ser);
         void deploy(Service& ser); //execute the deployment
 };
 
@@ -71,8 +75,26 @@ class Simulator {
 
 class DTM {
     public:
+    double delay = 0.;
+    int thuput = 0;
+    int lost_thuput = 0;
+    int delay_score = 0;
+    int thuput_score = 0;
+    int lost_thuput_score = 0;
+    int server_id = 0;
+    bool deployable = false;
+    double psi = 0.5; 
+    double omega = 0.5;
+    double tau = 0.3;
+    double reserved_factor = 1.;
+    double D = 0;
+    double T = 0;
+    double M = 0;
     static vector<Server>::iterator eval(Service& service, vector<Server>& server_set); //evaluate between CC and MEC choice, return chosed one
     static int get_score(Service& service, Server server);
+    static DTM get_data(Service& service, Server server);
+    static void standardization(vector<DTM>& data_table);
+    static int WAA(vector<DTM>& data_table);
 };
 
 enum SERVER {
