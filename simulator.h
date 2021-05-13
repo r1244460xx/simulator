@@ -37,7 +37,6 @@ class Server {
         int rest_sr = 0;
         double node_cr = 0; //concentration rate
         double intfc = 0.; //interference
-        double proc_delay = 0.; //rsp delay
         double propa_delay = 0.;
         vector<Service> service_list; //deployed service
         Server(int t);
@@ -52,9 +51,14 @@ class Metrics {
         double acc_ratio = 0.;
         double avg_urllc_delay = 0.;
         double avg_embb_delay = 0.;
-        int total_thuput = 0;
+        int service_counter = 0;
+        int satisfy_counter = 0;
+        int urllc_counter = 0;
+        int embb_counter = 0;
+        int total_satisfy_thuput = 0;
+        int total_ideal_thuput = 0;
         int total_unsatisfy_thput = 0;
-        void statistic(vector<Server>& server_list);
+        void statistic(vector<Service>& servcie_list, vector<Server>& server_list);
         void print();
 };
 
@@ -95,9 +99,8 @@ class DTM {
     static constexpr double tau = 0.3;
     static constexpr double reserved_factor = 1.;
     static vector<Server>::iterator eval(Service& service, vector<Server>& server_set); //evaluate between CC and MEC choice, return chosed one
-    static int get_score(Service& service, Server server);
     static Data get_data(Service& service, Server server);
-    static void standardization(vector<Data>& data_table);
+    static void normalization(vector<Data>& data_table);
     static int WAA(vector<Data>& data_table);
 };
 
