@@ -1,16 +1,19 @@
 #include "simulator.h"
-
+ofstream brief, full;
 int main () {
-    ofstream brief, full;
     brief.open("brief.txt", ios::out);
     full.open("full.txt", ios::out);
-    for(int i=10; i<20; i+=10) {
+    for(int i=5; i<60; i++) {
         int num_req = i, num_mec = 4, num_cc = 1, seed = 1;
         //cout << "Insert the numbers of service, mec, cc services, seed" << endl;
         //cin >> num_req >> num_mec >> num_cc >> seed;
+        cout << "\n\n**********The optimization of deployment**********" << endl;
+        cout << "Number of requests: " << num_req << ", Number of MEC: " << num_mec <<\
+        ", Number of CC: " << num_cc << endl;
+        cout << "**********Start**********" << endl;
         Simulator simulator(num_req, num_mec, num_cc, seed);
         simulator.simulate();
-        cout << "simulate over" << endl << endl << endl;
+        cout << "simulate over" << endl << endl;
         simulator.statistics();
         simulator.print();
         cout << endl;
@@ -153,8 +156,6 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 }
 
 void Simulator::simulate() {
-    cout << "Service Size: " << request_set.size() << endl;
-    cout << "Server Size: " << server_set.size() << endl;
     for(int i=0; i<request_set.size(); i++) {
         vector<Server>::iterator iter = DTM::eval(request_set[i], server_set); //put into DTM evaluation
         // vector<Server>::iterator iter = server_set.begin() + rand()%5;
@@ -170,6 +171,7 @@ void Simulator::statistics() {
 
 void Simulator::print() {
     for(int i=0; i<server_set.size(); i++) {
+        cout << endl;
         cout << "Server ID: " << server_set[i].id << endl;
         cout << "Server Type: " <<server_set[i].type << endl;
         cout << "Capacity: " << server_set[i].s_sr << endl;
@@ -201,6 +203,7 @@ void Metrics::statistic(vector<Service>& servcie_list, vector<Server>& server_li
         else if(servcie_list[i].type == URLLC)
             urllc_counter++;
     }
+    int num = 1;
     for(int i=0; i<server_list.size(); i++) {
         for(int j=0; j<server_list[i].service_list.size(); j++) {
             if(server_list[i].service_list[j].type == URLLC) {
@@ -211,10 +214,10 @@ void Metrics::statistic(vector<Service>& servcie_list, vector<Server>& server_li
             if(server_list[i].service_list[j].e2e_delay <= server_list[i].service_list[j].d_delay) {
                 satisfy_counter++;
                 total_satisfy_thuput += server_list[i].service_list[j].degraded_thuput;
-                cout << "Service id: " << server_list[i].service_list[j].id << " is satisfied" << endl;
+                cout << num++ << ". Service id: " << server_list[i].service_list[j].id << " is satisfied" << endl;
             }else {
                 total_unsatisfy_thput += server_list[i].service_list[j].degraded_thuput;
-                cout << "Service id: " << server_list[i].service_list[j].id << " isn't satisfied" << endl;
+                cout << num++ << ". Service id: " << server_list[i].service_list[j].id << " isn't satisfied" << endl;
             }
         }
     }
@@ -230,6 +233,13 @@ void Metrics::print() {
     cout << "Average eMBB delay: " << avg_embb_delay << endl;
     cout << "Average Urllc delay: " << avg_urllc_delay << endl;
     cout << "Acceptance ratio: " << acc_ratio << endl;
+    brief << static_cast<double>(total_satisfy_thuput)/total_ideal_thuput*100. << ",";
+    brief << static_cast<double>(total_unsatisfy_thput)/total_ideal_thuput*100. << ",";
+    brief << static_cast<double>(total_ideal_thuput-total_satisfy_thuput-total_unsatisfy_thput)/total_ideal_thuput*100. << ",";
+    brief << avg_embb_delay << ",";
+    brief << avg_urllc_delay << ",";
+    brief << acc_ratio << ",";
+    brief << endl;
 }
 
 /*-----------DTM class----------------*/
@@ -237,11 +247,12 @@ void Metrics::print() {
 vector<Server>::iterator DTM::eval(Service& service, vector<Server>& server_set) {
     vector<int> score_table;
     vector<Data> data_table;
+    cout << "\nService id: " << service.id << " parameter table: " << endl;
     for(int i=0; i<server_set.size(); i++) { //Fill the data_table
         Data data = get_data(service, server_set[i]);
         if(data.deployable)
-            cout << "\tService id: " << service.id << " on Server id: " << server_set[i].id << " parameters are " << \
-            data.delay << " " << data.thuput << " " << data.lost_thuput << endl;
+            cout << "\tServer id: " << server_set[i].id << " are " << \
+            data.delay << " / " << data.thuput << " / " << data.lost_thuput << endl;
         else
             cout << "\tService id: " << service.id << " on Server id: " << server_set[i].id << " isn't available." << endl;
         data_table.push_back(data);
