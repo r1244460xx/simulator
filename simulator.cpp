@@ -1,7 +1,7 @@
 #include "simulator.h"
 ofstream brief, full;
 int main () {
-    brief.open("brief.txt", ios::out);
+    brief.open("brief.csv", ios::out);
     full.open("full.txt", ios::out);
     for(int i=5; i<60; i++) {
         int num_req = i, num_mec = 4, num_cc = 1, seed = 1;

@@ -1,3 +1,5 @@
 .vscode/settings.json
 *.exe
 .vscode/c_cpp_properties.json
+*.csv
+*.txt

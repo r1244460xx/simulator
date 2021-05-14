@@ -34,7 +34,6 @@ class Server {
         int used_sr = 0;
         int s_bw = 0;
         int d_bw = 0;
-        int rest_sr = 0;
         double node_cr = 0; //concentration rate
         double intfc = 0.; //interference
         double propa_delay = 0.;
