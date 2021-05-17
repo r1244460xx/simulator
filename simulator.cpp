@@ -27,19 +27,23 @@ Service::Service(int t) {
         case URLLC:
             type = t;
             d_sr = rand()%4 + 1;
-            consumed_sr = rand()%d_sr + 1;
-            thuput = d_sr * 2500;
-            d_delay = (rand()%11+10)/10.;
+            consumed_sr = rand()%d_sr + 1; 
+            //thuput = d_sr * 2500;
+            thuput = 1;
+            d_delay = (rand()%6+5)/10.; //0.5~1ms
             data_rate_unit = 10;
+            d_proc_delay = 0.5 - 0.1 * consumed_sr;
             break;
 
         case EMBB:
             type = t;
             d_sr = rand()%4+1;
             consumed_sr = rand()%d_sr+1;
-            thuput = d_sr*50;
-            d_delay = (rand()%901+100)/10.;
+            //thuput = d_sr*50;
+            thuput = 1;
+            d_delay = (rand()%401+100)/10.; //10ms ~ 50ms
             data_rate_unit = 1000;
+            d_proc_delay = 5 - 1. * consumed_sr;
             break;
 
         case MMTC:
@@ -54,7 +58,7 @@ Service::Service(int t) {
 }
 
 double Service::get_e2e_delay(double propa_delay) {
-    return 1000./static_cast<double>(degraded_thuput) + 2 * propa_delay;
+    return d_proc_delay/static_cast<double>(degraded_thuput) + 2 * propa_delay;
 }
 
 int Service::get_thuput(double intfc) {
@@ -280,6 +284,7 @@ Data DTM::get_data(Service& service, Server server) {
         data.deployable = false;
         return data;
     }else {
+        double prev_intfc = server.intfc;
         server.deploy(service);
         data.server_id = server.id;
         data.delay =  server.service_list.back().d_delay - server.service_list.back().e2e_delay * reserved_factor;
@@ -287,7 +292,7 @@ Data DTM::get_data(Service& service, Server server) {
         int total_us_thuput = 0;
         for(int i=0; i<server.service_list.size()-1; i++) {
             if(server.service_list[i].e2e_delay > server.service_list[i].d_delay) {
-                total_us_thuput += 1;
+                total_us_thuput += (server.service_list[i].degraded_thuput - server.service_list[i].thuput * prev_intfc);
             }
         }
         data.lost_thuput = total_us_thuput;
@@ -384,7 +389,6 @@ void DTM::normalization(vector<Data>& data_table) {
     for(int i=0; i<data_table.size(); i++) {
         if(i_max != i_min) {
             data_table[i].lost_thuput_score = 99 * ((data_table[i].lost_thuput-i_min) / (i_max-i_min)) + 1;
-            data_table[i].lost_thuput_score = 1;
         }else {
             data_table[i].lost_thuput_score = 1;
         }

@@ -14,6 +14,7 @@ class Service {
         int d_bw = 0; //demand link resource
         int thuput = 0; //service rate
         int degraded_thuput = 0;
+        double d_proc_delay = 0.;
         double d_delay = 0.; //required e2e delay
         double e2e_delay = 0.; //measured e2e delay
         int data_rate_unit = 0; //data rate unit
