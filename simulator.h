@@ -73,6 +73,7 @@ class Simulator {
         Metrics mtr;
         Simulator(int num_req, int num_mec, int num_cc, int seed);
         void simulate(); //Pop all requests into servers
+        void simulate2();
         void statistics();
         void print(); //Print metrics
 };
@@ -105,6 +106,7 @@ class DTM {
 };
 
 class LD {
+    public:
     static vector<Server>::iterator eval(Service& service, vector<Server>& server_set);
 };
 

@@ -12,10 +12,16 @@ int main () {
         ", Number of CC: " << num_cc << endl;
         cout << "**********Start**********" << endl;
         Simulator simulator(num_req, num_mec, num_cc, seed);
+        Simulator simulator2 = simulator;
         simulator.simulate();
+        simulator2.simulate2();
         cout << "simulate over" << endl << endl;
         simulator.statistics();
+        simulator2.statistics();
+        cout << "DTM result: " << endl;
         simulator.print();
+        cout << endl << "LD result: " << endl;
+        simulator2.print();
         cout << endl;
     }
     
@@ -162,6 +168,16 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 void Simulator::simulate() {
     for(int i=0; i<request_set.size(); i++) {
         vector<Server>::iterator iter = DTM::eval(request_set[i], server_set); //put into DTM evaluation
+        // vector<Server>::iterator iter = server_set.begin() + rand()%5;
+        if(iter->avail(request_set[i]) && iter!=server_set.end()) { //if all server are congestion, return end()
+            iter->deploy(request_set[i]); //Exectue the deployment
+        }
+    }
+}
+
+void Simulator::simulate2() {
+    for(int i=0; i<request_set.size(); i++) {
+        vector<Server>::iterator iter = LD::eval(request_set[i], server_set); //put into DTM evaluation
         // vector<Server>::iterator iter = server_set.begin() + rand()%5;
         if(iter->avail(request_set[i]) && iter!=server_set.end()) { //if all server are congestion, return end()
             iter->deploy(request_set[i]); //Exectue the deployment
