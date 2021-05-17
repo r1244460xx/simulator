@@ -410,3 +410,32 @@ int DTM::WAA(vector<Data>& data_table) { //Weighted_arithmetic_average
     }
     return data_table[highest_index].server_id;
 }
+
+/*-----------Lowest delay class----------------*/
+vector<Server>::iterator eval(Service& service, vector<Server>& server_set) {
+    vector<double> delay_table;
+    double min = 10000;
+    int min_index = -1;
+    for(int i=0; i<server_set.size(); i++) { //Fill the data_table
+        if(server_set[i].avail(service)) {
+            Server server = server_set[i];
+            server.deploy(service);
+            delay_table.push_back(server.service_list.back().e2e_delay);
+        }else {
+            delay_table.push_back(0);
+        }
+    }
+    for(int i=0; i<delay_table.size(); i++) {
+        if(delay_table[i] != 0.) {
+            if(min>delay_table[i]) {
+                min = delay_table[i];
+                min_index = i;
+            }
+        } 
+    }
+    if(min_index == -1) {
+        return server_set.end();
+    }else {
+        return server_set.begin() + min_index;
+    }
+}

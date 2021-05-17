@@ -104,7 +104,9 @@ class DTM {
     static int WAA(vector<Data>& data_table);
 };
 
-
+class LD {
+    static vector<Server>::iterator eval(Service& service, vector<Server>& server_set);
+};
 
 enum SERVER {
     MEC,
