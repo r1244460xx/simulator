@@ -12,8 +12,8 @@ class Service {
         int d_sr = 0; //demand system resource
         int consumed_sr = 0;
         int d_bw = 0; //demand link resource
-        int thuput = 0; //service rate
-        int degraded_thuput = 0;
+        double thuput = 0; //service rate
+        double degraded_thuput = 0;
         double d_proc_delay = 0.;
         double d_delay = 0.; //required e2e delay
         double e2e_delay = 0.; //measured e2e delay
@@ -21,7 +21,7 @@ class Service {
         bool accepted = false;
         Service(int t);
         double get_e2e_delay(double propa_delay); //get measured e2e delay
-        int get_thuput(double intfc);  //get interferenced thuput
+        double get_thuput(double intfc);  //get interferenced thuput
         bool is_satified();
 
 };

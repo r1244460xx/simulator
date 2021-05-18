@@ -1,7 +1,7 @@
 #include "simulator.h"
 ofstream brief, full;
 int main () {
-    brief.open("brief.csv", ios::out);
+    brief.open("brief_DTM.csv", ios::out);
     full.open("full.txt", ios::out);
     for(int i=5; i<60; i++) {
         int num_req = i, num_mec = 4, num_cc = 1, seed = 1;
@@ -64,10 +64,14 @@ Service::Service(int t) {
 }
 
 double Service::get_e2e_delay(double propa_delay) {
-    return d_proc_delay/static_cast<double>(degraded_thuput) + 2 * propa_delay;
+    if(!degraded_thuput) {
+        cout << "Divider is zero" << endl;
+        exit(1);
+    }
+    return d_proc_delay/degraded_thuput + 2 * propa_delay;
 }
 
-int Service::get_thuput(double intfc) {
+double Service::get_thuput(double intfc) {
     return intfc * thuput;
 }
 
@@ -303,7 +307,8 @@ Data DTM::get_data(Service& service, Server server) {
         double prev_intfc = server.intfc;
         server.deploy(service);
         data.server_id = server.id;
-        data.delay =  server.service_list.back().d_delay - server.service_list.back().e2e_delay * reserved_factor;
+        data.delay =  server.service_list.back().d_delay - server.service_list.back().e2e_delay;// * reserved_factor;
+        cout << "||E2E DELAY: " << server.service_list.back().e2e_delay << "||" <<endl;
         data.thuput = server.service_list.back().degraded_thuput;
         int total_us_thuput = 0;
         for(int i=0; i<server.service_list.size()-1; i++) {
@@ -428,7 +433,7 @@ int DTM::WAA(vector<Data>& data_table) { //Weighted_arithmetic_average
 }
 
 /*-----------Lowest delay class----------------*/
-vector<Server>::iterator eval(Service& service, vector<Server>& server_set) {
+vector<Server>::iterator LD::eval(Service& service, vector<Server>& server_set) {
     vector<double> delay_table;
     double min = 10000;
     int min_index = -1;
