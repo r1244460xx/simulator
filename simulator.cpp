@@ -361,11 +361,12 @@ Data DTM::get_data(Service& service, Server server) {
 		return data;
 	} else {
 		double prev_intfc = server.intfc;
+		double r = 1.;  //reserved factor
 		server.deploy(service);
 		data.server_id = server.id;
 		data.delay =
 		    server.service_list.back().d_delay -
-		    server.service_list.back().e2e_delay;  // * reserved_factor;
+		    server.service_list.back().e2e_delay * r;  // * reserved_factor;
 		//cout << "||e2e delay: " << server.service_list.back().e2e_delay << "||"
 		//     << endl;
 		data.thuput = server.service_list.back().degraded_thuput;
