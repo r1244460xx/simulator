@@ -1,7 +1,7 @@
 #include "simulator.h"
 ofstream brief;
 int main() {
-	brief.open("brief_DTM.csv", ios::out);
+	brief.open("brief_CP.csv", ios::out);
 	brief << "Satisfying service rate"
 	      << ",Unsatisfying service rate"
 	      << ",Dropped service rate";
@@ -61,7 +61,7 @@ Service::Service(int t) {
 		break;
 
 	case MMTC:
-		assert(t == MMTC);
+		assert(t != MMTC);
 		type = t;
 		d_sr = rand() % 4 + 1;
 		consumed_sr = rand() % d_sr + 1;
@@ -73,12 +73,12 @@ Service::Service(int t) {
 }
 
 double Service::get_e2e_delay(double intfc, double propa_delay) {
-	assert(intfc == 0.);
+	assert(intfc > 0.);
 	return d_proc_delay / intfc + propa_delay;
 }
 
 double Service::get_thuput(double intfc) {
-	assert(intfc == 0.);
+	assert(intfc > 0.);
 	return intfc * thuput;
 }
 
@@ -104,7 +104,7 @@ Server::Server(int t) {
 
 double Server::get_intfc() {
 	double k1 = 0.9;
-	assert(used_sr >= s_sr * node_cr);
+	assert(used_sr <= s_sr * node_cr);
 	if (used_sr <= s_sr) {
 		return 1.;
 	} else {
@@ -113,7 +113,7 @@ double Server::get_intfc() {
 }
 
 bool Server::avail(Service& service) {
-	if (d_sr + service.d_sr <= s_sr * node_cr) {
+	if ((d_sr + service.d_sr) <= s_sr * node_cr) {
 		return true;
 	} else {
 		return false;
@@ -121,7 +121,7 @@ bool Server::avail(Service& service) {
 }
 
 void Server::deploy(Service& service) {
-	assert(d_sr + service.d_sr > s_sr * node_cr);
+	assert((d_sr + service.d_sr) <= s_sr * node_cr);
 	d_sr += service.d_sr;
 	used_sr += service.consumed_sr;
 	service_list.push_back(service);
@@ -174,12 +174,9 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 
 void Simulator::simulate() {
 	for (int i = 0; i < request_set.size(); i++) {
-		vector<Server>::iterator iter =
-		    DTM::eval(request_set[i], server_set);  // put into DTM evaluation
-		// vector<Server>::iterator iter = server_set.begin() + rand()%5;
-		if (iter->avail(request_set[i]) &&
-		    iter != server_set.end()) {    // if all server are congestion, return end()
-			iter->deploy(request_set[i]);  // Exectue the deployment
+		vector<Server>::iterator iter = DTM::eval(request_set[i], server_set);  // put into DTM evaluation
+		if (iter->avail(request_set[i]) && iter != server_set.end()) {          // if all server are congestion, return end()
+			iter->deploy(request_set[i]);                                       // Exectue the deployment
 		} else {
 			undeployed_service.push_back(request_set[i]);  //no enough space for this service
 		}
@@ -188,9 +185,7 @@ void Simulator::simulate() {
 
 void Simulator::simulate2() {
 	for (int i = 0; i < request_set.size(); i++) {
-		vector<Server>::iterator iter =
-		    LD::eval(request_set[i], server_set);  // put into DTM evaluation
-		// vector<Server>::iterator iter = server_set.begin() + rand()%5;
+		vector<Server>::iterator iter = LD::eval(request_set[i], server_set);  // put into DTM evaluation
 		if (iter->avail(request_set[i]) &&
 		    iter != server_set.end()) {    // if all server are congestion, return end()
 			iter->deploy(request_set[i]);  // Exectue the deployment
@@ -270,16 +265,16 @@ void Metrics::statistic(vector<Service>& servcie_list,
 			}
 		}
 	}
-	assert(service_counter == 0);
-	assert(urllc_counter == 0);
-	assert(embb_counter == 0);
+	assert(service_counter > 0);
+	assert(urllc_counter > 0);
+	assert(embb_counter > 0);
 	acc_ratio = satisfy_counter / static_cast<double>(service_counter);
 	avg_urllc_delay /= urllc_counter;
 	avg_embb_delay /= embb_counter;
 }
 
 void Metrics::print() {
-	assert(total_ideal_thuput == 0);
+	assert(total_ideal_thuput > 0);
 	cout << "Satisfying service rate: "
 	     << static_cast<double>(total_satisfy_thuput) / total_ideal_thuput *
 	            100.
@@ -332,7 +327,7 @@ vector<Server>::iterator DTM::eval(Service& service,
 		}
 	}
 	for (int i = 0; i < data_table.size(); i++) {
-		assert(data_table[i].deployable == false);
+		assert(data_table[i].deployable == true);
 	}
 	normalization(data_table);  // normalize the columns of the data table
 	cout << "Service id: " << service.id << " data Score table: " << endl;
@@ -404,8 +399,6 @@ void DTM::normalization(vector<Data>& data_table) {
 			d_min = positive_delay[i].delay;
 		}
 	}
-	assert(d_max == -1.);
-	assert(d_min == 100000.);
 	for (int i = 0; i < positive_delay.size(); i++) {
 		if (d_max != d_min) {  // 49~100
 			positive_delay[i].delay_score =
@@ -426,8 +419,6 @@ void DTM::normalization(vector<Data>& data_table) {
 			d_min = negative_delay[i].delay;
 		}
 	}
-	assert(d_max == -100000.);
-	assert(d_min == 1.);
 	for (int i = 0; i < negative_delay.size(); i++) {
 		if (d_max != d_min) {
 			negative_delay[i].delay_score =
@@ -453,8 +444,6 @@ void DTM::normalization(vector<Data>& data_table) {
 			d_min = data_table[i].thuput;
 		}
 	}
-	assert(d_max == -10000.);
-	assert(d_min == 100000.);
 	for (int i = 0; i < data_table.size(); i++) {
 		if (d_max != d_min) {
 			data_table[i].thuput_score =
@@ -474,8 +463,6 @@ void DTM::normalization(vector<Data>& data_table) {
 			d_min = data_table[i].lost_thuput;
 		}
 	}
-	assert(d_max == -10000.);
-	assert(d_min == 10000.);
 	for (int i = 0; i < data_table.size(); i++) {
 		if (d_max != d_min) {
 			data_table[i].lost_thuput_score =
@@ -502,7 +489,7 @@ int DTM::WAA(vector<Data>& data_table) {  // Weighted_arithmetic_average
 			highest_index = i;
 		}
 	}
-	assert(highest_index == -1);
+	assert(highest_index != -1);
 	return data_table[highest_index].server_id;
 }
 
