@@ -53,9 +53,10 @@ class Metrics {
 	int satisfy_counter = 0;
 	int urllc_counter = 0;
 	int embb_counter = 0;
-	int total_satisfy_thuput = 0;
-	int total_ideal_thuput = 0;
-	int total_unsatisfy_thput = 0;
+	double total_satisfy_thuput = 0.;
+	double total_ideal_thuput = 0.;
+	double total_unsatisfy_thput = 0.;
+	int total_d_sr = 0;
 	void statistic(vector<Service>& servcie_list, vector<Server>& server_list);
 	void print();
 };

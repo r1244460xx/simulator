@@ -1,38 +1,51 @@
 #include "simulator.h"
 ofstream brief;
-int main() {
+int main(int argc, char** argv) {
 	brief.open("brief_CP.csv", ios::out);
+	int init_request = 5;
+	int max_request = 150;
+	int init_server = 1;
+	int max_server = 2;
+	int seed = 5;
+	if (argc == 6) {
+		init_request = atoi(argv[1]);
+		max_request = atoi(argv[2]);
+		init_server = atoi(argv[3]);
+		max_server = atoi(argv[4]);
+		seed = atoi(argv[5]);
+	}
 	brief << "Satisfying service rate"
 	      << ",Unsatisfying service rate"
 	      << ",Dropped service rate";
 	brief << ",Average eMBB delay"
 	      << ",Average Urllc delay"
 	      << ",Acceptance ratio" << endl;
-	for (int i = 5; i < 60; i++) {
-		for (int j = 1; j < 5; j++) {
-			int num_req = i, num_mec = 4 * j, num_cc = j, seed = 1;
-			// cout << "Insert the numbers of service, mec, cc services, seed" <<
-			// endl; cin >> num_req >> num_mec >> num_cc >> seed;
-			cout << "\n\n**********The optimization of deployments**********"
-			     << endl;
-			cout << "Number of requests: " << num_req
-			     << ", Number of MEC: " << num_mec << ", Number of CC: " << num_cc
-			     << endl;
-			cout << "**********Start**********" << endl;
-			Simulator simulator(num_req, num_mec, num_cc, seed);
-			Simulator simulator2 = simulator;
-			simulator.simulate();
-			simulator2.simulate2();
-			cout << "simulate over" << endl
-			     << endl;
-			simulator.statistics();
-			simulator2.statistics();
-			cout << "CP result: " << endl;
-			simulator.print();
-			cout << endl
-			     << "LD result: " << endl;
-			simulator2.print();
-			cout << endl;
+	brief << init_request << "," << max_request << "," << init_server << "," << max_server << endl;
+	for (int k = 2; k < 3; k++) {
+		for (int j = init_server; j < max_server; j++) {
+			for (int i = init_request; i < max_request; i++) {
+				int num_req = i, num_mec = 4 * j, num_cc = j;
+				cout << "\n\n**********The optimization of deployments**********"
+				     << endl;
+				cout << "Number of requests: " << num_req
+				     << ", Number of MEC: " << num_mec << ", Number of CC: " << num_cc
+				     << endl;
+				cout << "**********Start**********" << endl;
+				Simulator simulator(num_req, num_mec, num_cc, k);
+				Simulator simulator2 = simulator;
+				simulator.simulate();
+				simulator2.simulate2();
+				cout << "simulate over" << endl
+				     << endl;
+				simulator.statistics();
+				simulator2.statistics();
+				cout << "CP result: " << endl;
+				simulator.print();
+				cout << endl
+				     << "LD result: " << endl;
+				simulator2.print();
+				cout << endl;
+			}
 		}
 	}
 }
@@ -45,9 +58,10 @@ Service::Service(int t) {
 		d_sr = rand() % 4 + 1;
 		consumed_sr = rand() % d_sr + 1;
 		thuput = static_cast<double>(consumed_sr);
-		d_delay = (rand() % 11 + 40.) / 100.;  // 0.40 ~ 0.50ms demand e2e delay
+		d_delay = static_cast<double>(rand() % 20 + 1);  // 1 ~ 20ms demand e2e delay
 		data_rate_unit = 10;
 		d_proc_delay = 0.25 - 0.05 * consumed_sr;
+		accepted = false;
 		break;
 
 	case EMBB:
@@ -55,9 +69,10 @@ Service::Service(int t) {
 		d_sr = rand() % 4 + 1;
 		consumed_sr = rand() % d_sr + 1;
 		thuput = static_cast<double>(consumed_sr);
-		d_delay = (rand() % 401 + 100) / 20.;  // 5ms ~ 25ms demand e2e delay
+		d_delay = static_cast<double>(rand() % 20 + 21);  // 21ms ~ 40ms demand e2e delay
 		data_rate_unit = 1000;
 		d_proc_delay = 12.5 - 2.5 * consumed_sr;  //20 times higher than urllc
+		accepted = false;
 		break;
 
 	case MMTC:
@@ -90,7 +105,7 @@ Server::Server(int t) {
 		s_sr = 8;
 		s_bw = 20000000;  // kbps
 		node_cr = 2;
-		propa_delay = (rand() % 16 + 5.) / 100.;  // random 0.05~0.2ms
+		propa_delay = static_cast<double>(rand() % 10) + 1.;  // random 1~10ms
 		break;
 	case CC:
 		type = t;
@@ -226,6 +241,14 @@ void Simulator::print() {
 	}
 	cout << endl;
 	mtr.print();
+	for (int i = 0; i < request_set.size(); i++) {
+		if (request_set[i].accepted) {
+			brief << "1";
+		} else {
+			brief << "0";
+		}
+	}
+	brief << endl;
 	cout << endl;
 }
 
@@ -234,18 +257,17 @@ void Metrics::statistic(vector<Service>& servcie_list,
                         vector<Server>& server_list) {
 	for (int i = 0; i < servcie_list.size(); i++) {
 		total_ideal_thuput += servcie_list[i].thuput;
+		total_d_sr += servcie_list[i].consumed_sr;
 		service_counter++;
-		if (servcie_list[i].type == EMBB)
-			embb_counter++;
-		else if (servcie_list[i].type == URLLC)
-			urllc_counter++;
 	}
 	int num = 1;
 	for (int i = 0; i < server_list.size(); i++) {
 		for (int j = 0; j < server_list[i].service_list.size(); j++) {
 			if (server_list[i].service_list[j].type == URLLC) {
+				urllc_counter++;
 				avg_urllc_delay += server_list[i].service_list[j].e2e_delay;
 			} else if (server_list[i].service_list[j].type == EMBB) {
+				embb_counter++;
 				avg_embb_delay += server_list[i].service_list[j].e2e_delay;
 			}
 			if (server_list[i].service_list[j].e2e_delay <=
@@ -253,6 +275,8 @@ void Metrics::statistic(vector<Service>& servcie_list,
 				satisfy_counter++;
 				total_satisfy_thuput +=
 				    server_list[i].service_list[j].degraded_thuput;
+				assert(server_list[i].service_list[j].id <= servcie_list.size());
+				servcie_list[server_list[i].service_list[j].id].accepted = true;
 				cout << num++
 				     << ".\tService id: " << server_list[i].service_list[j].id
 				     << ",\tService type: " << server_list[i].service_list[j].type << " is satisfied." << endl;
@@ -268,15 +292,15 @@ void Metrics::statistic(vector<Service>& servcie_list,
 	assert(service_counter > 0);
 	assert(urllc_counter > 0);
 	assert(embb_counter > 0);
-	acc_ratio = satisfy_counter / static_cast<double>(service_counter);
-	avg_urllc_delay /= urllc_counter;
-	avg_embb_delay /= embb_counter;
+	acc_ratio = static_cast<double>(satisfy_counter) / static_cast<double>(service_counter) * 100.;
+	avg_urllc_delay /= static_cast<double>(urllc_counter);
+	avg_embb_delay /= static_cast<double>(embb_counter);
 }
 
 void Metrics::print() {
 	assert(total_ideal_thuput > 0);
 	cout << "Satisfying service rate: "
-	     << static_cast<double>(total_satisfy_thuput) / total_ideal_thuput *
+	     << total_satisfy_thuput / total_ideal_thuput *
 	            100.
 	     << endl;
 	cout << "Unsatisfying service rate: "
@@ -284,27 +308,30 @@ void Metrics::print() {
 	            100.
 	     << endl;
 	cout << "Dropped service rate: "
-	     << static_cast<double>(total_ideal_thuput - total_satisfy_thuput -
-	                            total_unsatisfy_thput) /
-	            total_ideal_thuput * 100.
+	     << total_ideal_thuput - total_satisfy_thuput -
+	            total_unsatisfy_thput /
+	                total_ideal_thuput * 100.
 	     << endl;
 	cout << "Average eMBB delay: " << avg_embb_delay << endl;
 	cout << "Average Urllc delay: " << avg_urllc_delay << endl;
-	cout << "Acceptance ratio: " << acc_ratio << endl;
-	brief << static_cast<double>(total_satisfy_thuput) / total_ideal_thuput *
+	cout << "Acceptance ratio: " << acc_ratio * 100. << endl;
+	brief << total_satisfy_thuput / total_ideal_thuput *
 	             100.
 	      << ",";
-	brief << static_cast<double>(total_unsatisfy_thput) / total_ideal_thuput *
+	brief << total_unsatisfy_thput / total_ideal_thuput *
 	             100.
 	      << ",";
-	brief << static_cast<double>(total_ideal_thuput - total_satisfy_thuput -
-	                             total_unsatisfy_thput) /
-	             total_ideal_thuput * 100.
+	brief << total_ideal_thuput - total_satisfy_thuput -
+	             total_unsatisfy_thput /
+	                 total_ideal_thuput * 100.
 	      << ",";
 	brief << avg_embb_delay << ",";
 	brief << avg_urllc_delay << ",";
 	brief << acc_ratio << ",";
-	brief << endl;
+	brief << total_satisfy_thuput << ",";
+	brief << total_ideal_thuput << ",";
+	brief << total_d_sr << ",";
+	brief << total_satisfy_thuput / static_cast<double>(total_d_sr) << endl;
 }
 
 /*-----------DTM class----------------*/
@@ -508,8 +535,9 @@ vector<Server>::iterator LD::eval(Service& service,
 			delay_table.push_back(10000.);
 		}
 	}
+	assert(server_set.size() == delay_table.size());
 	for (int i = 0; i < delay_table.size(); i++) {
-		if (delay_table[i] != 10000.) {
+		if (delay_table[i] < 10000.) {
 			if (min > delay_table[i]) {
 				min = delay_table[i];
 				min_index = i;
