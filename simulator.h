@@ -46,15 +46,21 @@ class Server {
 class Metrics {
    public:
 	int exec_time = 0;
-	double acc_ratio = 0.;
+	double satisfy_ratio = 0.;
+	double unsatisfy_ratio = 0.;
+	double drop_ratio = 0.;
 	double avg_urllc_delay = 0.;
 	double avg_embb_delay = 0.;
+	double avg_embb_d_delay = 0.;
+	double avg_urllc_d_delay = 0.;
 	int service_counter = 0;
 	int satisfy_counter = 0;
+	int unsatisfy_counter = 0;
 	int urllc_counter = 0;
 	int embb_counter = 0;
 	double total_satisfy_thuput = 0.;
 	double total_ideal_thuput = 0.;
+	double total_actual_thuput = 0.;
 	double total_unsatisfy_thput = 0.;
 	int total_d_sr = 0;
 	void statistic(vector<Service>& servcie_list, vector<Server>& server_list);
@@ -74,6 +80,7 @@ class Simulator {
 	Simulator(int num_req, int num_mec, int num_cc, int seed);
 	void simulate();  //Pop all requests into servers
 	void simulate2();
+	void simulate3();
 	void statistics();
 	void print();  //Print metrics
 };
@@ -95,9 +102,9 @@ class Data {
 
 class DTM {
    public:
-	static constexpr double psi = 1;
-	static constexpr double omega = 1;
-	static constexpr double tau = 1;
+	static constexpr double psi = 3.;
+	static constexpr double omega = 2.;
+	static constexpr double tau = 1.;
 	static constexpr double reserved_factor = 1.;
 	static vector<Server>::iterator eval(Service& service, vector<Server>& server_set);  //evaluate between CC and MEC choice, return chosed one
 	static Data get_data(Service& service, Server server);
@@ -106,6 +113,11 @@ class DTM {
 };
 
 class LD {
+   public:
+	static vector<Server>::iterator eval(Service& service, vector<Server>& server_set);
+};
+
+class LI {
    public:
 	static vector<Server>::iterator eval(Service& service, vector<Server>& server_set);
 };

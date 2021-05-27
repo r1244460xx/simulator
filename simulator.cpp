@@ -2,10 +2,10 @@
 ofstream brief;
 int main(int argc, char** argv) {
 	brief.open("brief_CP.csv", ios::out);
-	int init_request = 5;
-	int max_request = 150;
+	int init_request = 1;
+	int max_request = 300;
 	int init_server = 1;
-	int max_server = 2;
+	int max_server = 6;
 	int seed = 5;
 	if (argc == 6) {
 		init_request = atoi(argv[1]);
@@ -33,17 +33,23 @@ int main(int argc, char** argv) {
 				cout << "**********Start**********" << endl;
 				Simulator simulator(num_req, num_mec, num_cc, k);
 				Simulator simulator2 = simulator;
+				Simulator simulator3 = simulator;
 				simulator.simulate();
 				simulator2.simulate2();
+				simulator3.simulate3();
 				cout << "simulate over" << endl
 				     << endl;
 				simulator.statistics();
 				simulator2.statistics();
+				simulator3.statistics();
 				cout << "CP result: " << endl;
 				simulator.print();
 				cout << endl
 				     << "LD result: " << endl;
 				simulator2.print();
+				cout << endl
+				     << "LI result: " << endl;
+				simulator3.print();
 				cout << endl;
 			}
 		}
@@ -210,6 +216,18 @@ void Simulator::simulate2() {
 	}
 }
 
+void Simulator::simulate3() {
+	for (int i = 0; i < request_set.size(); i++) {
+		vector<Server>::iterator iter = LI::eval(request_set[i], server_set);  // put into DTM evaluation
+		if (iter->avail(request_set[i]) &&
+		    iter != server_set.end()) {    // if all server are congestion, return end()
+			iter->deploy(request_set[i]);  // Exectue the deployment
+		} else {
+			undeployed_service.push_back(request_set[i]);  //no enough space for this service
+		}
+	}
+}
+
 void Simulator::statistics() {
 	mtr.statistic(request_set, server_set);
 }
@@ -241,6 +259,7 @@ void Simulator::print() {
 	}
 	cout << endl;
 	mtr.print();
+	brief << endl;
 	for (int i = 0; i < request_set.size(); i++) {
 		if (request_set[i].accepted) {
 			brief << "1";
@@ -256,20 +275,23 @@ void Simulator::print() {
 void Metrics::statistic(vector<Service>& servcie_list,
                         vector<Server>& server_list) {
 	for (int i = 0; i < servcie_list.size(); i++) {
-		total_ideal_thuput += servcie_list[i].thuput;
+		total_ideal_thuput += servcie_list[i].thuput;  //total_ideal_thuput = total_d_sr
 		total_d_sr += servcie_list[i].consumed_sr;
-		service_counter++;
 	}
+	service_counter = servcie_list.size();
 	int num = 1;
 	for (int i = 0; i < server_list.size(); i++) {
 		for (int j = 0; j < server_list[i].service_list.size(); j++) {
 			if (server_list[i].service_list[j].type == URLLC) {
 				urllc_counter++;
 				avg_urllc_delay += server_list[i].service_list[j].e2e_delay;
+				avg_urllc_d_delay += server_list[i].service_list[j].d_delay;
 			} else if (server_list[i].service_list[j].type == EMBB) {
 				embb_counter++;
 				avg_embb_delay += server_list[i].service_list[j].e2e_delay;
+				avg_embb_d_delay += server_list[i].service_list[j].d_delay;
 			}
+			total_actual_thuput += server_list[i].service_list[j].degraded_thuput;
 			if (server_list[i].service_list[j].e2e_delay <=
 			    server_list[i].service_list[j].d_delay) {
 				satisfy_counter++;
@@ -281,6 +303,7 @@ void Metrics::statistic(vector<Service>& servcie_list,
 				     << ".\tService id: " << server_list[i].service_list[j].id
 				     << ",\tService type: " << server_list[i].service_list[j].type << " is satisfied." << endl;
 			} else {
+				unsatisfy_counter++;
 				total_unsatisfy_thput +=
 				    server_list[i].service_list[j].degraded_thuput;
 				cout << num++
@@ -290,11 +313,19 @@ void Metrics::statistic(vector<Service>& servcie_list,
 		}
 	}
 	assert(service_counter > 0);
-	assert(urllc_counter > 0);
-	assert(embb_counter > 0);
-	acc_ratio = static_cast<double>(satisfy_counter) / static_cast<double>(service_counter) * 100.;
-	avg_urllc_delay /= static_cast<double>(urllc_counter);
-	avg_embb_delay /= static_cast<double>(embb_counter);
+	//assert(urllc_counter > 0);
+	//assert(embb_counter > 0);
+	satisfy_ratio = static_cast<double>(satisfy_counter) / service_counter * 100.;
+	unsatisfy_ratio = static_cast<double>(unsatisfy_counter) / service_counter * 100.;
+	drop_ratio = static_cast<double>(service_counter - satisfy_counter - unsatisfy_counter) / service_counter * 100.;
+	if (urllc_counter > 0) {
+		avg_urllc_delay /= urllc_counter;
+		avg_urllc_d_delay /= urllc_counter;
+	}
+	if (embb_counter > 0) {
+		avg_embb_delay /= embb_counter;
+		avg_embb_d_delay /= embb_counter;
+	}
 }
 
 void Metrics::print() {
@@ -314,24 +345,18 @@ void Metrics::print() {
 	     << endl;
 	cout << "Average eMBB delay: " << avg_embb_delay << endl;
 	cout << "Average Urllc delay: " << avg_urllc_delay << endl;
-	cout << "Acceptance ratio: " << acc_ratio * 100. << endl;
-	brief << total_satisfy_thuput / total_ideal_thuput *
-	             100.
-	      << ",";
-	brief << total_unsatisfy_thput / total_ideal_thuput *
-	             100.
-	      << ",";
-	brief << total_ideal_thuput - total_satisfy_thuput -
-	             total_unsatisfy_thput /
-	                 total_ideal_thuput * 100.
-	      << ",";
-	brief << avg_embb_delay << ",";
-	brief << avg_urllc_delay << ",";
-	brief << acc_ratio << ",";
-	brief << total_satisfy_thuput << ",";
+	cout << "Acceptance ratio: " << satisfy_ratio * 100. << endl;
+	brief << satisfy_ratio << ",";
+	brief << unsatisfy_ratio << ",";
+	brief << drop_ratio << ",";
+	brief << total_actual_thuput / total_ideal_thuput * 100. << ",";
+	brief << total_satisfy_thuput / total_ideal_thuput * 100. << ",";
+	brief << total_unsatisfy_thput / total_ideal_thuput * 100. << ",";
 	brief << total_ideal_thuput << ",";
-	brief << total_d_sr << ",";
-	brief << total_satisfy_thuput / static_cast<double>(total_d_sr) << endl;
+	brief << avg_embb_delay << ",";
+	brief << avg_embb_d_delay << ",";
+	brief << avg_urllc_delay << ",";
+	brief << avg_urllc_d_delay << ",";
 }
 
 /*-----------DTM class----------------*/
@@ -509,8 +534,8 @@ int DTM::WAA(vector<Data>& data_table) {  // Weighted_arithmetic_average
 	int max = -10000;
 	for (int i = 0; i < data_table.size(); i++) {
 		int total = psi * data_table[i].delay_score +
-		            omega * data_table[i].thuput_score -
-		            tau * data_table[i].lost_thuput_score;
+		            omega * data_table[i].thuput_score -  //0;
+		            3 * tau * data_table[i].lost_thuput_score;
 		if (total > max) {
 			max = total;
 			highest_index = i;
@@ -548,5 +573,46 @@ vector<Server>::iterator LD::eval(Service& service,
 		return server_set.end();
 	} else {
 		return server_set.begin() + min_index;
+	}
+}
+
+/*-----------Lowest interference class----------------*/
+vector<Server>::iterator LI::eval(Service& service,
+                                  vector<Server>& server_set) {
+	vector<Server> candidate1;
+	vector<Server> candidate2;
+	for (int i = 0; i < server_set.size(); i++) {
+		if (server_set[i].avail(service)) {
+			Server server = server_set[i];
+			server.deploy(service);
+			if (server.service_list.back().e2e_delay <= server.service_list.back().d_delay) {
+				candidate1.push_back(server);
+			} else {
+				candidate2.push_back(server);
+			}
+		}
+	}
+	if (candidate1.size() > 0) {
+		double max_intfc = 0.;
+		int max_index = -1;
+		for (int i = 0; i < candidate1.size(); i++) {
+			if (candidate1[i].intfc > max_intfc) {
+				max_intfc = candidate1[i].intfc;
+				max_index = i;
+			}
+		}
+		return server_set.begin() + candidate1[max_index].id;
+	} else if (candidate2.size() > 0) {
+		double max_intfc = 0.;
+		int max_index = -1;
+		for (int i = 0; i < candidate2.size(); i++) {
+			if (candidate2[i].intfc > max_intfc) {
+				max_intfc = candidate2[i].intfc;
+				max_index = i;
+			}
+		}
+		return server_set.begin() + candidate2[max_index].id;
+	} else {
+		return server_set.end();
 	}
 }
