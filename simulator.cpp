@@ -1,19 +1,21 @@
 #include "simulator.h"
 ofstream brief;
+ofstream test;
 int main(int argc, char** argv) {
 	brief.open("brief_CP.csv", ios::out);
+	test.open("test.txt", ios::out);
 	int init_request = 1;
-	int max_request = 300;
-	int init_server = 1;
-	int max_server = 6;
+	int max_request = 500;
+	int init_server = 8;
+	int max_server = 11;
 	int seed = 5;
-	if (argc == 6) {
-		init_request = atoi(argv[1]);
-		max_request = atoi(argv[2]);
-		init_server = atoi(argv[3]);
-		max_server = atoi(argv[4]);
-		seed = atoi(argv[5]);
-	}
+	// if (argc == 6) {
+	// 	init_request = atoi(argv[1]);
+	// 	max_request = atoi(argv[2]);
+	// 	init_server = atoi(argv[3]);
+	// 	max_server = atoi(argv[4]);
+	// 	seed = atoi(argv[5]);
+	// }
 	brief << "Satisfying service rate"
 	      << ",Unsatisfying service rate"
 	      << ",Dropped service rate";
@@ -24,7 +26,9 @@ int main(int argc, char** argv) {
 	for (int k = 2; k < 3; k++) {
 		for (int j = init_server; j < max_server; j++) {
 			for (int i = init_request; i < max_request; i++) {
-				int num_req = i, num_mec = 4 * j, num_cc = j;
+				int num_req = i;
+				int num_mec = 4 * j;
+				int num_cc = j;
 				cout << "\n\n**********The optimization of deployments**********"
 				     << endl;
 				cout << "Number of requests: " << num_req
@@ -51,9 +55,12 @@ int main(int argc, char** argv) {
 				     << "LI result: " << endl;
 				simulator3.print();
 				cout << endl;
+				test << endl;
 			}
 		}
 	}
+	brief.close();
+	test.close();
 }
 /*----------Service class-------------*/
 
@@ -64,9 +71,10 @@ Service::Service(int t) {
 		d_sr = rand() % 4 + 1;
 		consumed_sr = rand() % d_sr + 1;
 		thuput = static_cast<double>(consumed_sr);
-		d_delay = static_cast<double>(rand() % 20 + 1);  // 1 ~ 20ms demand e2e delay
+		d_delay = static_cast<double>(rand() % 191 + 10) / 10.;  // 1.0 ~ 20.0ms demand e2e delay
 		data_rate_unit = 10;
-		d_proc_delay = 0.25 - 0.05 * consumed_sr;
+		//d_proc_delay = 0.25 - 0.05 * consumed_sr; //0.05 ~ 0.2 ms
+		d_proc_delay = d_delay * (5 - consumed_sr) / 10.;
 		accepted = false;
 		break;
 
@@ -75,9 +83,10 @@ Service::Service(int t) {
 		d_sr = rand() % 4 + 1;
 		consumed_sr = rand() % d_sr + 1;
 		thuput = static_cast<double>(consumed_sr);
-		d_delay = static_cast<double>(rand() % 20 + 21);  // 21ms ~ 40ms demand e2e delay
+		d_delay = static_cast<double>(rand() % 191 + 210) / 10.;  // 21.0ms ~ 40.0ms demand e2e delay
 		data_rate_unit = 1000;
-		d_proc_delay = 12.5 - 2.5 * consumed_sr;  //20 times higher than urllc
+		//d_proc_delay = 12.5 - 2.5 * consumed_sr;
+		d_proc_delay = d_delay * (5 - consumed_sr) / 10.;
 		accepted = false;
 		break;
 
@@ -111,7 +120,8 @@ Server::Server(int t) {
 		s_sr = 8;
 		s_bw = 20000000;  // kbps
 		node_cr = 2;
-		propa_delay = static_cast<double>(rand() % 10) + 1.;  // random 1~10ms
+		//propa_delay = static_cast<double>(rand() % 96 + 5) / 10.;  // random 0.50 ~ 10.00ms
+		propa_delay = 0.;
 		break;
 	case CC:
 		type = t;
@@ -159,6 +169,10 @@ void Server::deploy(Service& service) {
 Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 	srand(seed);
 	int id = 0;
+	Server s(MEC);
+	s.id = id++;
+	s.propa_delay = 0.5;
+	server_set.push_back(s);
 	for (int i = 0; i < num_req; i++) {
 		int s = rand() % 2;  //urllc or embb
 		Service service(s);
@@ -168,6 +182,7 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 	for (int i = 0; i < num_mec; i++) {
 		Server s(MEC);
 		s.id = id++;
+		s.propa_delay = 0.5 + static_cast<double>((i + 1) * 10) / num_mec;
 		server_set.push_back(s);
 	}
 	for (int i = 0; i < num_cc; i++) {
@@ -315,6 +330,7 @@ void Metrics::statistic(vector<Service>& servcie_list,
 	assert(service_counter > 0);
 	//assert(urllc_counter > 0);
 	//assert(embb_counter > 0);
+	test << satisfy_counter << "/" << service_counter << ",";
 	satisfy_ratio = static_cast<double>(satisfy_counter) / service_counter * 100.;
 	unsatisfy_ratio = static_cast<double>(unsatisfy_counter) / service_counter * 100.;
 	drop_ratio = static_cast<double>(service_counter - satisfy_counter - unsatisfy_counter) / service_counter * 100.;
@@ -369,8 +385,6 @@ vector<Server>::iterator DTM::eval(Service& service,
 	for (int i = 0; i < server_set.size(); i++) {      // Fill the data_table
 		Data data = get_data(service, server_set[i]);  //Evaluation of deploying this service on this server
 		if (data.deployable) {
-			cout << "\tServer id: " << server_set[i].id << " are " << data.delay
-			     << " / " << data.thuput << " / " << data.lost_thuput << endl;
 			data_table.push_back(data);
 		} else {
 			cout << "\tService id: " << service.id << ", Service type: " << service.type
@@ -427,6 +441,9 @@ Data DTM::get_data(Service& service, Server server) {
 		}
 		data.lost_thuput = total_us_thuput;
 		data.deployable = true;
+		cout << "\tServer id: " << server.id << " are propa: " << server.propa_delay << " + proc: " << server.service_list.back().d_proc_delay << " = " << server.service_list.back().e2e_delay
+		     << " / thuput: " << server.service_list.back().degraded_thuput << " / lost thupt: " << total_us_thuput
+		     << " , server intfc: " << server.intfc << endl;
 		return data;
 	}
 }
@@ -535,7 +552,7 @@ int DTM::WAA(vector<Data>& data_table) {  // Weighted_arithmetic_average
 	for (int i = 0; i < data_table.size(); i++) {
 		int total = psi * data_table[i].delay_score +
 		            omega * data_table[i].thuput_score -  //0;
-		            3 * tau * data_table[i].lost_thuput_score;
+		            tau * data_table[i].lost_thuput_score;
 		if (total > max) {
 			max = total;
 			highest_index = i;
