@@ -5,9 +5,9 @@ int main(int argc, char** argv) {
 	brief.open("brief_CP.csv", ios::out);
 	test.open("test.txt", ios::out);
 	int init_request = 1;
-	int max_request = 500;
-	int init_server = 8;
-	int max_server = 11;
+	int max_request = 600;
+	int init_server = 5;
+	int max_server = 6;
 	int seed = 5;
 	// if (argc == 6) {
 	// 	init_request = atoi(argv[1]);
@@ -168,21 +168,22 @@ void Server::deploy(Service& service) {
 /*----------Simulator class-------------*/
 Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 	srand(seed);
-	int id = 0;
-	Server s(MEC);
-	s.id = id++;
-	s.propa_delay = 0.5;
-	server_set.push_back(s);
 	for (int i = 0; i < num_req; i++) {
 		int s = rand() % 2;  //urllc or embb
 		Service service(s);
 		service.id = i;
 		request_set.push_back(service);
 	}
-	for (int i = 0; i < num_mec; i++) {
+	int id = 0;
+	Server s(MEC);
+	s.id = id++;
+	s.propa_delay = 0.5;
+	server_set.push_back(s);
+
+	for (int i = 0; i < num_mec - 1; i++) {
 		Server s(MEC);
 		s.id = id++;
-		s.propa_delay = 0.5 + static_cast<double>((i + 1) * 10) / num_mec;
+		s.propa_delay = 0.5 + static_cast<double>((i + 1)) * 10. / num_mec;
 		server_set.push_back(s);
 	}
 	for (int i = 0; i < num_cc; i++) {
@@ -297,6 +298,7 @@ void Metrics::statistic(vector<Service>& servcie_list,
 	int num = 1;
 	for (int i = 0; i < server_list.size(); i++) {
 		for (int j = 0; j < server_list[i].service_list.size(); j++) {
+			avg_thuput += server_list[i].service_list[j].degraded_thuput / server_list[i].service_list[j].thuput * 100.;
 			if (server_list[i].service_list[j].type == URLLC) {
 				urllc_counter++;
 				avg_urllc_delay += server_list[i].service_list[j].e2e_delay;
@@ -334,6 +336,7 @@ void Metrics::statistic(vector<Service>& servcie_list,
 	satisfy_ratio = static_cast<double>(satisfy_counter) / service_counter * 100.;
 	unsatisfy_ratio = static_cast<double>(unsatisfy_counter) / service_counter * 100.;
 	drop_ratio = static_cast<double>(service_counter - satisfy_counter - unsatisfy_counter) / service_counter * 100.;
+	avg_thuput /= service_counter;
 	if (urllc_counter > 0) {
 		avg_urllc_delay /= urllc_counter;
 		avg_urllc_d_delay /= urllc_counter;
@@ -373,6 +376,7 @@ void Metrics::print() {
 	brief << avg_embb_d_delay << ",";
 	brief << avg_urllc_delay << ",";
 	brief << avg_urllc_d_delay << ",";
+	brief << avg_thuput << ",";
 }
 
 /*-----------DTM class----------------*/

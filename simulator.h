@@ -62,6 +62,7 @@ class Metrics {
 	double total_ideal_thuput = 0.;
 	double total_actual_thuput = 0.;
 	double total_unsatisfy_thput = 0.;
+	double avg_thuput = 0.;
 	int total_d_sr = 0;
 	void statistic(vector<Service>& servcie_list, vector<Server>& server_list);
 	void print();

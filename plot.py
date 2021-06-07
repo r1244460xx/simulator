@@ -26,6 +26,7 @@ with open(filename,"r") as f:
         cp_tisp = [] #total ideal system performance
         cp_tssp = [] #total satisfied system performance
         cp_tusp = [] #total unsatisfied system performance
+        cp_aap = [] #Average application performance
         ld_ss = [] #satisfied services
         ld_us = [] #unsatisfied services
         ld_ds = [] #dropped services
@@ -37,6 +38,7 @@ with open(filename,"r") as f:
         ld_tisp = [] #total ideal system performance
         ld_tssp = [] #total satisfied system performance
         ld_tusp = [] #total unsatisfied system performance
+        ld_aap = [] #Average application performance
         li_ss = [] #satisfied services
         li_us = [] #unsatisfied services
         li_ds = [] #dropped services
@@ -48,6 +50,7 @@ with open(filename,"r") as f:
         li_tisp = [] #total ideal system performance
         li_tssp = [] #total satisfied system performance
         li_tusp = [] #total unsatisfied system performance
+        li_aap = [] #Average application performance
         x = []
         for j in range(init_request, max_request):
             CP_data = f.readline().split(",")
@@ -68,6 +71,7 @@ with open(filename,"r") as f:
             cp_aedd.append(float(CP_data[8]))
             cp_aud.append(float(CP_data[9]))
             cp_audd.append(float(CP_data[10]))
+            cp_aap.append(float(CP_data[11]))
 
             ld_ss.append(float(LD_data[0]))
             ld_us.append(float(LD_data[1]))
@@ -80,6 +84,7 @@ with open(filename,"r") as f:
             ld_aedd.append(float(LD_data[8]))
             ld_aud.append(float(LD_data[9]))
             ld_audd.append(float(LD_data[10]))
+            ld_aap.append(float(LD_data[11]))
 
             li_ss.append(float(LI_data[0]))
             li_us.append(float(LI_data[1]))
@@ -92,6 +97,7 @@ with open(filename,"r") as f:
             li_aedd.append(float(LI_data[8]))
             li_aud.append(float(LI_data[9]))
             li_audd.append(float(LI_data[10]))
+            li_aap.append(float(LI_data[11]))
 
             x.append(j)
             cp_status = cp_status[0]
@@ -123,72 +129,79 @@ with open(filename,"r") as f:
         print(ld_c)
         print(li_c)"""
         fontSize = 28
-        plt.rc('xtick', labelsize=20)
-        plt.rc('ytick', labelsize=20)
+        if i == init_server or i == max_server-1:
+            plt.rc('xtick', labelsize=20)
+            plt.rc('ytick', labelsize=20)
 
-        plt.figure()
-        plt.plot(x, cp_ss, "r", x, ld_ss, "g", x, li_ss, "b")
-        plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("Percentage", fontsize=fontSize)
-        plt.title("Percentage of satisfied services to all ones: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            plt.figure()
+            plt.plot(x, cp_ss, "rx", x, ld_ss, "g+", x, li_ss, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Percentage of saatisfied services(%)", fontsize=fontSize)
+            plt.title("Percentage of satisfied services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            
+            # plt.figure()
+            # plt.plot(x, cp_us, "r", x, ld_us, "g", x, li_us, "b")
+            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            # plt.xlabel("Number of service requests", fontsize=fontSize)
+            # plt.ylabel("Percentage", fontsize=fontSize)
+            # plt.title("Percentage of unsatisfied services to all ones: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            
+            # plt.figure()
+            # plt.plot(x, cp_ds, "r", x, ld_ds, "g", x, li_ds, "b")
+            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            # plt.xlabel("Number of service requests", fontsize=fontSize)
+            # plt.ylabel("Percentage", fontsize=fontSize)
+            # plt.title("Percentage of dropped services to all ones: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            
+            plt.figure()
+            plt.plot(x, cp_aed, "rx", x, ld_aed, "g+", x, li_aed, "bo", x, cp_aedd, "y^")
+            plt.legend(["CPA", "LD", "LI", "Required"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("E2E delay(ms)", fontsize=fontSize)
+            plt.title("Average eMBB E2E delay, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            
+            plt.figure()
+            plt.plot(x, cp_aud, "rx", x, ld_aud, "g+", x, li_aud, "bo", x, cp_audd, "y^")
+            plt.legend(["CPA", "LD", "LI", "Required"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("E2E delay(ms)", fontsize=fontSize)
+            plt.title("Average uRLLC E2E delay, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
         
-        plt.figure()
-        plt.plot(x, cp_us, "r", x, ld_us, "g", x, li_us, "b")
-        plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("Percentage", fontsize=fontSize)
-        plt.title("Percentage of unsatisfied services to all ones: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            # plt.figure()
+            # plt.plot(x, cp_tsp, "r", x, ld_tsp, "g", x, li_tsp, "b")
+            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            # plt.xlabel("Number of service requests", fontsize=fontSize)
+            # plt.ylabel("Percentage", fontsize=fontSize)
+            # plt.title("Percentage of total system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            
+            # plt.figure()
+            # plt.plot(x, cp_tisp, "r", x, ld_tisp, "g", x, li_tisp, "b")
+            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            # plt.xlabel("Number of service requests", fontsize=fontSize)
+            # plt.ylabel("Percentage", fontsize=fontSize)
+            # plt.title("Percentage of total ideal system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
         
-        plt.figure()
-        plt.plot(x, cp_ds, "r", x, ld_ds, "g", x, li_ds, "b")
-        plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("Percentage", fontsize=fontSize)
-        plt.title("Percentage of dropped services to all ones: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-        
-        plt.figure()
-        plt.plot(x, cp_aed, "r", x, ld_aed, "g", x, li_aed, "b", x, cp_aedd, "y")
-        plt.legend(["CPA", "LD", "LI", "Required"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("E2E delay(ms)", fontsize=fontSize)
-        plt.title("Average eMBB E2E delay: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-        
-        plt.figure()
-        plt.plot(x, cp_aud, "r", x, ld_aud, "g", x, li_aud, "b", x, cp_audd, "y")
-        plt.legend(["CPA", "LD", "LI", "Required"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("E2E delay(ms)", fontsize=fontSize)
-        plt.title("Average uRLLC E2E delay: " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-    
-        plt.figure()
-        plt.plot(x, cp_tsp, "r", x, ld_tsp, "g", x, li_tsp, "b")
-        plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("Percentage", fontsize=fontSize)
-        plt.title("Percentage of total system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-        
-        # plt.figure()
-        # plt.plot(x, cp_tisp, "r", x, ld_tisp, "g", x, li_tisp, "b")
-        # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        # plt.xlabel("Number of service requests", fontsize=fontSize)
-        # plt.ylabel("Percentage", fontsize=fontSize)
-        # plt.title("Percentage of total ideal system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-       
 
-        plt.figure()
-        plt.plot(x, cp_tssp, "r", x, ld_tssp, "g", x, li_tssp, "b")
-        plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("Percentage", fontsize=fontSize)
-        plt.title("Percentage of total satisfied system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-        
-        plt.figure()
-        plt.plot(x, cp_tusp, "r", x, ld_tusp, "g", x, li_tusp, "b")
-        plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-        plt.xlabel("Number of service requests", fontsize=fontSize)
-        plt.ylabel("Percentage", fontsize=fontSize)
-        plt.title("Percentage of total unsatisfied system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            # plt.figure()
+            # plt.plot(x, cp_tssp, "rx", x, ld_tssp, "g+", x, li_tssp, "bo")
+            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            # plt.xlabel("Number of service requests", fontsize=fontSize)
+            # plt.ylabel("Percentage of total application of satisfied services to service requests(%)", fontsize=fontSize)
+            # plt.title("Percentage of total application \nof satisfied services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            
+            # plt.figure()
+            # plt.plot(x, cp_tusp, "r", x, ld_tusp, "g", x, li_tusp, "b")
+            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            # plt.xlabel("Number of service requests", fontsize=fontSize)
+            # plt.ylabel("Percentage", fontsize=fontSize)
+            # plt.title("Percentage of total unsatisfied system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
 
+            plt.figure()
+            plt.plot(x, cp_aap, "rx", x, ld_aap, "g+", x, li_aap, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Average percentage \nof normalized application performance(%)", fontsize=fontSize)
+            plt.title("Average percentage of normalized application performance, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
 
     plt.show()
