@@ -1,5 +1,11 @@
 import matplotlib.pyplot as plt
+import os
+path = os.path.abspath(__file__)
 filename = "brief_CP.csv"
+script_dir = os.path.dirname(__file__)
+results_dir = os.path.join(script_dir, 'output/')
+if not os.path.isdir(results_dir):
+    os.makedirs(results_dir)
 
 with open(filename,"r") as f:
     titles = f.readline().split(",")
@@ -27,6 +33,13 @@ with open(filename,"r") as f:
         cp_tssp = [] #total satisfied system performance
         cp_tusp = [] #total unsatisfied system performance
         cp_aap = [] #Average application performance
+        cp_auap = [] #Average uRLLC application performance
+        cp_aeap = [] #Average eMBB application performance
+        cp_sus = [] #satisfied uRLLC services
+        cp_ses = [] #satisfied eMBB services
+        cp_tsusp = [] #total satisfied uRLLC system performance
+        cp_tsesp = [] #total satisfied eMBB system performance
+
         ld_ss = [] #satisfied services
         ld_us = [] #unsatisfied services
         ld_ds = [] #dropped services
@@ -39,6 +52,13 @@ with open(filename,"r") as f:
         ld_tssp = [] #total satisfied system performance
         ld_tusp = [] #total unsatisfied system performance
         ld_aap = [] #Average application performance
+        ld_auap = [] #Average uRLLC application performance
+        ld_aeap = [] #Average eMBB application performance
+        ld_sus = [] #satisfied uRLLC services
+        ld_ses = [] #satisfied eMBB services
+        ld_tsusp = [] #total satisfied uRLLC system performance
+        ld_tsesp = [] #total satisfied eMBB system performance
+
         li_ss = [] #satisfied services
         li_us = [] #unsatisfied services
         li_ds = [] #dropped services
@@ -51,6 +71,13 @@ with open(filename,"r") as f:
         li_tssp = [] #total satisfied system performance
         li_tusp = [] #total unsatisfied system performance
         li_aap = [] #Average application performance
+        li_auap = [] #Average uRLLC application performance
+        li_aeap = [] #Average eMBB application performance
+        li_sus = [] #satisfied uRLLC services
+        li_ses = [] #satisfied eMBB services
+        li_tsusp = [] #total satisfied uRLLC system performance
+        li_tsesp = [] #total satisfied eMBB system performance
+        
         x = []
         for j in range(init_request, max_request):
             CP_data = f.readline().split(",")
@@ -72,6 +99,12 @@ with open(filename,"r") as f:
             cp_aud.append(float(CP_data[9]))
             cp_audd.append(float(CP_data[10]))
             cp_aap.append(float(CP_data[11]))
+            cp_ses.append(float(CP_data[12]))
+            cp_sus.append(float(CP_data[13]))
+            cp_aeap.append(float(CP_data[14]))
+            cp_auap.append(float(CP_data[15]))
+            cp_tsesp.append(float(CP_data[16]))
+            cp_tsusp.append(float(CP_data[17]))
 
             ld_ss.append(float(LD_data[0]))
             ld_us.append(float(LD_data[1]))
@@ -85,6 +118,12 @@ with open(filename,"r") as f:
             ld_aud.append(float(LD_data[9]))
             ld_audd.append(float(LD_data[10]))
             ld_aap.append(float(LD_data[11]))
+            ld_ses.append(float(LD_data[12]))
+            ld_sus.append(float(LD_data[13]))
+            ld_aeap.append(float(LD_data[14]))
+            ld_auap.append(float(LD_data[15]))
+            ld_tsesp.append(float(LD_data[16]))
+            ld_tsusp.append(float(LD_data[17]))
 
             li_ss.append(float(LI_data[0]))
             li_us.append(float(LI_data[1]))
@@ -98,6 +137,12 @@ with open(filename,"r") as f:
             li_aud.append(float(LI_data[9]))
             li_audd.append(float(LI_data[10]))
             li_aap.append(float(LI_data[11]))
+            li_ses.append(float(LI_data[12]))
+            li_sus.append(float(LI_data[13]))
+            li_aeap.append(float(LI_data[14]))
+            li_auap.append(float(LI_data[15]))
+            li_tsesp.append(float(LI_data[16]))
+            li_tsusp.append(float(LI_data[17]))
 
             x.append(j)
             cp_status = cp_status[0]
@@ -139,6 +184,23 @@ with open(filename,"r") as f:
             plt.xlabel("Number of service requests", fontsize=fontSize)
             plt.ylabel("Percentage of saatisfied services(%)", fontsize=fontSize)
             plt.title("Percentage of satisfied services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"ss"+str(i))
+
+            plt.figure()
+            plt.plot(x, cp_ses, "rx", x, ld_ses, "g+", x, li_ses, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Percentage of saatisfied eMBB services(%)", fontsize=fontSize)
+            plt.title("Percentage of satisfied eMBB services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"ses"+str(i))
+            
+            plt.figure()
+            plt.plot(x, cp_sus, "rx", x, ld_sus, "g+", x, li_sus, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Percentage of saatisfied uRLLC services(%)", fontsize=fontSize)
+            plt.title("Percentage of satisfied uRLLC services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"sus"+str(i))
             
             # plt.figure()
             # plt.plot(x, cp_us, "r", x, ld_us, "g", x, li_us, "b")
@@ -160,42 +222,39 @@ with open(filename,"r") as f:
             plt.xlabel("Number of service requests", fontsize=fontSize)
             plt.ylabel("E2E delay(ms)", fontsize=fontSize)
             plt.title("Average eMBB E2E delay, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
-            
+            plt.savefig(results_dir+"aed"+str(i))
+
             plt.figure()
             plt.plot(x, cp_aud, "rx", x, ld_aud, "g+", x, li_aud, "bo", x, cp_audd, "y^")
             plt.legend(["CPA", "LD", "LI", "Required"], loc=0, fontsize= 20)
             plt.xlabel("Number of service requests", fontsize=fontSize)
             plt.ylabel("E2E delay(ms)", fontsize=fontSize)
             plt.title("Average uRLLC E2E delay, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
-        
-            # plt.figure()
-            # plt.plot(x, cp_tsp, "r", x, ld_tsp, "g", x, li_tsp, "b")
-            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-            # plt.xlabel("Number of service requests", fontsize=fontSize)
-            # plt.ylabel("Percentage", fontsize=fontSize)
-            # plt.title("Percentage of total system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-            
-            # plt.figure()
-            # plt.plot(x, cp_tisp, "r", x, ld_tisp, "g", x, li_tisp, "b")
-            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-            # plt.xlabel("Number of service requests", fontsize=fontSize)
-            # plt.ylabel("Percentage", fontsize=fontSize)
-            # plt.title("Percentage of total ideal system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
-        
+            plt.savefig(results_dir+"aud"+str(i))
 
-            # plt.figure()
-            # plt.plot(x, cp_tssp, "rx", x, ld_tssp, "g+", x, li_tssp, "bo")
-            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-            # plt.xlabel("Number of service requests", fontsize=fontSize)
-            # plt.ylabel("Percentage of total application of satisfied services to service requests(%)", fontsize=fontSize)
-            # plt.title("Percentage of total application \nof satisfied services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
-            
-            # plt.figure()
-            # plt.plot(x, cp_tusp, "r", x, ld_tusp, "g", x, li_tusp, "b")
-            # plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
-            # plt.xlabel("Number of service requests", fontsize=fontSize)
-            # plt.ylabel("Percentage", fontsize=fontSize)
-            # plt.title("Percentage of total unsatisfied system performance to ideal one " + str(4 * i) + "MEC / " + str(i) + "CC", fontsize=fontSize)
+            plt.figure()
+            plt.plot(x, cp_tssp, "rx", x, ld_tssp, "g+", x, li_tssp, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Percentage of total application of satisfied services to service requests(%)", fontsize=fontSize)
+            plt.title("Percentage of total application \nof satisfied services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"tssp"+str(i))
+
+            plt.figure()
+            plt.plot(x, cp_tsesp, "rx", x, ld_tsesp, "g+", x, li_tsesp, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Percentage of total application of satisfied eMBB services to service requests(%)", fontsize=fontSize)
+            plt.title("Percentage of total application \nof satisfied eMBB services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"tsesp"+str(i))
+
+            plt.figure()
+            plt.plot(x, cp_tsusp, "rx", x, ld_tsusp, "g+", x, li_tsusp, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Percentage of total application of satisfied uRLLC services to service requests(%)", fontsize=fontSize)
+            plt.title("Percentage of total application \nof satisfied uRLLC services to service requests, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"tsusp"+str(i))
 
             plt.figure()
             plt.plot(x, cp_aap, "rx", x, ld_aap, "g+", x, li_aap, "bo")
@@ -203,5 +262,22 @@ with open(filename,"r") as f:
             plt.xlabel("Number of service requests", fontsize=fontSize)
             plt.ylabel("Average percentage \nof normalized application performance(%)", fontsize=fontSize)
             plt.title("Average percentage of normalized application performance, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"aap"+str(i))
 
-    plt.show()
+            plt.figure()
+            plt.plot(x, cp_aeap, "rx", x, ld_aeap, "g+", x, li_aeap, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Average percentage \nof normalized eMBB application performance(%)", fontsize=fontSize)
+            plt.title("Average percentage of normalized eMBB application performance, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"aeap"+str(i))
+
+            plt.figure()
+            plt.plot(x, cp_auap, "rx", x, ld_auap, "g+", x, li_auap, "bo")
+            plt.legend(["CPA", "LD", "LI"], loc=0, fontsize= 20)
+            plt.xlabel("Number of service requests", fontsize=fontSize)
+            plt.ylabel("Average percentage \nof normalized uRLLC application performance(%)", fontsize=fontSize)
+            plt.title("Average percentage of normalized uRLLC application performance, X=" + str(4*i) + ", Y=" + str(i), fontsize=fontSize)
+            plt.savefig(results_dir+"auap"+str(i))
+
+    #plt.show()

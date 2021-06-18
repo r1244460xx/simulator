@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
 	int init_request = 1;
 	int max_request = 600;
 	int init_server = 5;
-	int max_server = 6;
+	int max_server = 11;
 	int seed = 5;
 	// if (argc == 6) {
 	// 	init_request = atoi(argv[1]);
@@ -128,7 +128,7 @@ Server::Server(int t) {
 		s_sr = 32;
 		s_bw = 20000000;
 		node_cr = 2;
-		propa_delay = 15.;
+		propa_delay = 15.;  //15.
 		break;
 	}
 }
@@ -183,7 +183,7 @@ Simulator::Simulator(int num_req, int num_mec, int num_cc, int seed) {
 	for (int i = 0; i < num_mec - 1; i++) {
 		Server s(MEC);
 		s.id = id++;
-		s.propa_delay = 0.5 + static_cast<double>((i + 1)) * 10. / num_mec;
+		s.propa_delay = 0.5 + static_cast<double>((i + 1)) * 10. / num_mec;  //10.
 		server_set.push_back(s);
 	}
 	for (int i = 0; i < num_cc; i++) {
@@ -288,37 +288,57 @@ void Simulator::print() {
 }
 
 /*----------Metrics class-------------*/
-void Metrics::statistic(vector<Service>& servcie_list,
+void Metrics::statistic(vector<Service>& service_list,
                         vector<Server>& server_list) {
-	for (int i = 0; i < servcie_list.size(); i++) {
-		total_ideal_thuput += servcie_list[i].thuput;  //total_ideal_thuput = total_d_sr
-		total_d_sr += servcie_list[i].consumed_sr;
+	service_counter = service_list.size();
+	for (int i = 0; i < service_list.size(); i++) {
+		//total_ideal_thuput += service_list[i].thuput;  //total_ideal_thuput = total_d_sr
+		if (service_list[i].type == URLLC) {
+			urllc_counter++;
+			//total_urllc_ideal_thuput += service_list[i].thuput;
+		} else if (service_list[i].type == EMBB) {
+			embb_counter++;
+			//total_embb_ideal_thput += service_list[i].thuput;
+		}
 	}
-	service_counter = servcie_list.size();
+
 	int num = 1;
 	for (int i = 0; i < server_list.size(); i++) {
 		for (int j = 0; j < server_list[i].service_list.size(); j++) {
+			deployed_service_counter++;
+			total_ideal_thuput += server_list[i].service_list[j].thuput;
+			total_actual_thuput += server_list[i].service_list[j].degraded_thuput;
 			avg_thuput += server_list[i].service_list[j].degraded_thuput / server_list[i].service_list[j].thuput * 100.;
 			if (server_list[i].service_list[j].type == URLLC) {
-				urllc_counter++;
+				deployed_urllc_counter++;
+				total_urllc_ideal_thuput += server_list[i].service_list[j].thuput;
 				avg_urllc_delay += server_list[i].service_list[j].e2e_delay;
 				avg_urllc_d_delay += server_list[i].service_list[j].d_delay;
+				avg_urllc_thuput += server_list[i].service_list[j].degraded_thuput / server_list[i].service_list[j].thuput * 100.;
 			} else if (server_list[i].service_list[j].type == EMBB) {
-				embb_counter++;
+				deployed_embb_counter++;
+				total_embb_ideal_thput += server_list[i].service_list[j].thuput;
 				avg_embb_delay += server_list[i].service_list[j].e2e_delay;
 				avg_embb_d_delay += server_list[i].service_list[j].d_delay;
+				avg_embb_thuput += server_list[i].service_list[j].degraded_thuput / server_list[i].service_list[j].thuput * 100.;
 			}
-			total_actual_thuput += server_list[i].service_list[j].degraded_thuput;
 			if (server_list[i].service_list[j].e2e_delay <=
 			    server_list[i].service_list[j].d_delay) {
 				satisfy_counter++;
 				total_satisfy_thuput +=
 				    server_list[i].service_list[j].degraded_thuput;
-				assert(server_list[i].service_list[j].id <= servcie_list.size());
-				servcie_list[server_list[i].service_list[j].id].accepted = true;
+				assert(server_list[i].service_list[j].id <= service_list.size());
+				service_list[server_list[i].service_list[j].id].accepted = true;
 				cout << num++
 				     << ".\tService id: " << server_list[i].service_list[j].id
 				     << ",\tService type: " << server_list[i].service_list[j].type << " is satisfied." << endl;
+				if (server_list[i].service_list[j].type == URLLC) {
+					satisfy_urllc_counter++;
+					total_urllc_satisfy_thuput += server_list[i].service_list[j].degraded_thuput;
+				} else if (server_list[i].service_list[j].type == EMBB) {
+					satisfy_embb_counter++;
+					total_embb_satisfy_thuput += server_list[i].service_list[j].degraded_thuput;
+				}
 			} else {
 				unsatisfy_counter++;
 				total_unsatisfy_thput +=
@@ -330,21 +350,30 @@ void Metrics::statistic(vector<Service>& servcie_list,
 		}
 	}
 	assert(service_counter > 0);
-	//assert(urllc_counter > 0);
-	//assert(embb_counter > 0);
-	test << satisfy_counter << "/" << service_counter << ",";
-	satisfy_ratio = static_cast<double>(satisfy_counter) / service_counter * 100.;
+	test << "Number of satisfied: " << satisfy_counter << "/ Number of deployed: " << deployed_service_counter << "/ Number of services: " << service_counter << ",";
+	satisfy_ratio = static_cast<double>(satisfy_counter) / deployed_service_counter * 100.;            //Chosen
+	satisfy_urllc_ratio = static_cast<double>(satisfy_urllc_counter) / deployed_urllc_counter * 100.;  //Chosen
+	satisfy_embb_ratio = static_cast<double>(satisfy_embb_counter) / deployed_embb_counter * 100.;     //Chosen
 	unsatisfy_ratio = static_cast<double>(unsatisfy_counter) / service_counter * 100.;
 	drop_ratio = static_cast<double>(service_counter - satisfy_counter - unsatisfy_counter) / service_counter * 100.;
-	avg_thuput /= service_counter;
-	if (urllc_counter > 0) {
-		avg_urllc_delay /= urllc_counter;
-		avg_urllc_d_delay /= urllc_counter;
+
+	assert(deployed_service_counter > 0);
+	avg_thuput /= deployed_service_counter;  //Chosen
+	if (deployed_urllc_counter > 0) {
+		avg_urllc_delay /= deployed_urllc_counter;    //Chosen
+		avg_urllc_d_delay /= deployed_urllc_counter;  //Chosen
+		avg_urllc_thuput /= deployed_urllc_counter;   //Chosen
 	}
-	if (embb_counter > 0) {
-		avg_embb_delay /= embb_counter;
-		avg_embb_d_delay /= embb_counter;
+	if (deployed_embb_counter > 0) {
+		avg_embb_delay /= deployed_embb_counter;    //Chosen
+		avg_embb_d_delay /= deployed_embb_counter;  //Chosen
+		avg_embb_thuput /= deployed_embb_counter;   //Chosen
 	}
+	total_satisfy_thuput = total_satisfy_thuput / total_ideal_thuput * 100.;  //Chosen
+	total_actual_thuput = total_actual_thuput / total_ideal_thuput * 100.;
+	total_unsatisfy_thput = total_unsatisfy_thput / total_ideal_thuput * 100.;
+	total_urllc_satisfy_thuput = total_urllc_satisfy_thuput / total_urllc_ideal_thuput * 100.;  //Chosen
+	total_embb_satisfy_thuput = total_embb_satisfy_thuput / total_embb_ideal_thput * 100.;      //Chosen
 }
 
 void Metrics::print() {
@@ -365,18 +394,24 @@ void Metrics::print() {
 	cout << "Average eMBB delay: " << avg_embb_delay << endl;
 	cout << "Average Urllc delay: " << avg_urllc_delay << endl;
 	cout << "Acceptance ratio: " << satisfy_ratio * 100. << endl;
-	brief << satisfy_ratio << ",";
+	brief << satisfy_ratio << ",";  //Chosen
 	brief << unsatisfy_ratio << ",";
 	brief << drop_ratio << ",";
-	brief << total_actual_thuput / total_ideal_thuput * 100. << ",";
-	brief << total_satisfy_thuput / total_ideal_thuput * 100. << ",";
-	brief << total_unsatisfy_thput / total_ideal_thuput * 100. << ",";
+	brief << total_actual_thuput << ",";
+	brief << total_satisfy_thuput << ",";  //Chosen
+	brief << total_unsatisfy_thput << ",";
 	brief << total_ideal_thuput << ",";
-	brief << avg_embb_delay << ",";
-	brief << avg_embb_d_delay << ",";
-	brief << avg_urllc_delay << ",";
-	brief << avg_urllc_d_delay << ",";
-	brief << avg_thuput << ",";
+	brief << avg_embb_delay << ",";              //Chosen
+	brief << avg_embb_d_delay << ",";            //Chosen
+	brief << avg_urllc_delay << ",";             //Chosen
+	brief << avg_urllc_d_delay << ",";           //Chosen
+	brief << avg_thuput << ",";                  //Chosen
+	brief << satisfy_embb_ratio << ",";          //Chosen
+	brief << satisfy_urllc_ratio << ",";         //Chosen
+	brief << avg_embb_thuput << ",";             //Chosen
+	brief << avg_urllc_thuput << ",";            //Chosen
+	brief << total_embb_satisfy_thuput << ",";   //Chosen
+	brief << total_urllc_satisfy_thuput << ",";  //Chosen
 }
 
 /*-----------DTM class----------------*/

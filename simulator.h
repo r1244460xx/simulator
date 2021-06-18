@@ -47,6 +47,8 @@ class Metrics {
    public:
 	int exec_time = 0;
 	double satisfy_ratio = 0.;
+	double satisfy_urllc_ratio = 0.;
+	double satisfy_embb_ratio = 0.;
 	double unsatisfy_ratio = 0.;
 	double drop_ratio = 0.;
 	double avg_urllc_delay = 0.;
@@ -54,15 +56,26 @@ class Metrics {
 	double avg_embb_d_delay = 0.;
 	double avg_urllc_d_delay = 0.;
 	int service_counter = 0;
+	int deployed_service_counter = 0;
 	int satisfy_counter = 0;
 	int unsatisfy_counter = 0;
 	int urllc_counter = 0;
+	int deployed_urllc_counter = 0;
+	int satisfy_urllc_counter = 0;
 	int embb_counter = 0;
+	int deployed_embb_counter = 0;
+	int satisfy_embb_counter = 0;
 	double total_satisfy_thuput = 0.;
 	double total_ideal_thuput = 0.;
 	double total_actual_thuput = 0.;
 	double total_unsatisfy_thput = 0.;
+	double total_urllc_satisfy_thuput = 0.;
+	double total_urllc_ideal_thuput = 0.;
+	double total_embb_satisfy_thuput = 0.;
+	double total_embb_ideal_thput = 0.;
 	double avg_thuput = 0.;
+	double avg_urllc_thuput = 0.;
+	double avg_embb_thuput = 0.;
 	int total_d_sr = 0;
 	void statistic(vector<Service>& servcie_list, vector<Server>& server_list);
 	void print();
